@@ -1,0 +1,49 @@
+name: CPP Context Verify & Validation
+
+# Need to update this for actual migration
+trigger:
+  branches:
+    include:
+      - main
+      - 'team/*'
+    exclude:
+      - 'dev/release-*'
+  paths:
+    include:
+    - '*'
+
+pr:
+  - '*'
+
+resources:
+  repositories:
+    - repository: cppAzureDevOpsTemplates
+      type: github
+      name: hmcts/cpp-azure-devops-templates
+      endpoint: 'hmcts'
+      ref: 'main'
+
+pool:
+  name: "MDV-ADO-AGENT-AKS-01"
+  demands:
+    - identifier -equals centos8-j17
+
+variables:
+  sonarqubeProject: "" # update eg: uk.gov.moj.cpp.listing:listing-parent
+  service_Name: '' # this should be service name. Image repository will be <serviceName>-service and should be in sysnc with aks-deploy repo.. eg : stagingbulkscan, hearing, systemidmapper
+  itTest_Folder: '' # integration test folder name system-id-mapper-integration-test
+
+stages:
+  - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+      - template: pipelines/context-verify.yaml@cppAzureDevOpsTemplates
+        parameters:
+          sonarqube_project: ${{ variables['sonarqubeProject'] }}
+          sonarQubeType: 'sonarQubeAKS'
+
+  - ${{ if eq(variables['Build.Reason'], 'IndividualCI') }}:
+      - template: pipelines/context-validation.yaml@cppAzureDevOpsTemplates
+        parameters:
+          repo: "$(Build.Repository.Name)"
+          sonarQubeType: 'sonarQubeAKS'
+          serviceName: ${{ variables['service_Name'] }}
+          itTestFolder: ${{ variables['itTest_Folder'] }}
