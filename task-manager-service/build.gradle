@@ -1,0 +1,35 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    // Spring Boot Data JPA
+    api 'org.springframework.boot:spring-boot-starter-data-jpa'
+    
+    // JSON Processing API
+    api 'jakarta.json:jakarta.json-api'
+    api 'org.glassfish:jakarta.json:2.0.1'
+    
+    // Jackson for JSON processing
+    api 'com.fasterxml.jackson.core:jackson-databind'
+    
+    // Spring Boot Validation
+    api 'org.springframework.boot:spring-boot-starter-validation'
+    
+    // Spring Transaction
+    api 'org.springframework:spring-tx'
+    
+    // Spring Context for @Component, @Autowired, etc.
+    api 'org.springframework:spring-context'
+    
+    // Test dependencies
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.mockito:mockito-junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+

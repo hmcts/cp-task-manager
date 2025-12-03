@@ -1,0 +1,5 @@
+rootProject.name = 'spring-job-scheduler'
+
+include 'task-manager-service'
+include 'example-application'
+include 'jobstore-liquibase'

@@ -1,0 +1,32 @@
+plugins {
+    id 'org.springframework.boot'
+}
+
+dependencies {
+    // Depend on task-manager-service
+    implementation project(':task-manager-service')
+    
+    // Depend on jobstore-liquibase for database schema
+    implementation project(':jobstore-liquibase')
+    
+    // Spring Boot Web
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    
+    // PostgreSQL Driver
+    runtimeOnly 'org.postgresql:postgresql'
+    
+    // Liquibase for Database Migration
+    implementation 'org.liquibase:liquibase-core'
+}
+
+// Spring Boot plugin configuration
+springBoot {
+    buildInfo()
+}
+
+// Exclude Lombok from the executable jar
+jar {
+    enabled = false
+    archiveClassifier = ''
+}
+
