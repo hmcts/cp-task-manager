@@ -40,8 +40,8 @@ subprojects {
 
     dependencies {
         // Lombok - using latest version for Java compatibility
-        compileOnly 'org.projectlombok:lombok:1.18.36'
-        annotationProcessor 'org.projectlombok:lombok:1.18.36'
+        compileOnly 'org.projectlombok:lombok:1.18.42'
+        annotationProcessor 'org.projectlombok:lombok:1.18.42'
         
         // Test
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
