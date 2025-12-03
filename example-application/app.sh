@@ -84,7 +84,7 @@ start_app() {
         
         # Wait a bit more and check if it's actually responding
         sleep 5
-        if curl -s "${BASE_URL}/api/jobs" > /dev/null 2>&1; then
+        if curl -s "${BASE_URL}/api/jobs/workflow" > /dev/null 2>&1; then
             print_info "Application is responding to requests"
         else
             print_warn "Application started but may still be initializing. Check logs: ${SCRIPT_DIR}/${LOG_FILE}"
@@ -163,7 +163,7 @@ show_status() {
         print_info "Application URL: ${BASE_URL}"
         
         # Check if it's responding
-        if curl -s "${BASE_URL}/api/jobs" > /dev/null 2>&1; then
+        if curl -s "${BASE_URL}/api/jobs/workflow" > /dev/null 2>&1; then
             print_info "Application is responding to requests"
         else
             print_warn "Application is running but not responding to requests"
@@ -195,35 +195,30 @@ execute_curl() {
     
     print_info "Available API endpoints:"
     echo ""
-    echo "1. GET /api/jobs - Get all jobs"
-    echo "2. GET /api/jobs/{jobId} - Get job by ID"
-    echo "3. POST /api/jobs - Create a new job"
+    echo "1. POST /api/jobs/workflow - Create a workflow job"
+    echo "2. POST /api/jobs/oneoff - Create a one-off job"
+    echo "3. POST /api/jobs/oneoffwithretry - Create a one-off job with retry"
     echo ""
     
-    case "${2:-all}" in
-        "all"|"")
-            print_info "Fetching all jobs..."
-            curl -s -X GET "${BASE_URL}/api/jobs" | jq '.' 2>/dev/null || curl -s -X GET "${BASE_URL}/api/jobs"
-            ;;
-        "get")
-            if [ -z "$3" ]; then
-                print_error "Usage: ./app.sh curl get {jobId}"
-                return 1
-            fi
-            print_info "Fetching job with ID: $3"
-            curl -s -X GET "${BASE_URL}/api/jobs/$3" | jq '.' 2>/dev/null || curl -s -X GET "${BASE_URL}/api/jobs/$3"
-            ;;
-        "create"|"post")
-            print_info "Creating a new job..."
-            curl -s -X POST "${BASE_URL}/api/jobs" -H "Content-Type: application/json"
+    case "${2:-workflow}" in
+        "workflow")
+            print_info "Creating a workflow job..."
+            curl -s -X POST "${BASE_URL}/api/jobs/workflow" -w "\nHTTP Status: %{http_code}\n"
             echo ""
-            print_info "Job created. Fetching all jobs..."
-            sleep 1
-            curl -s -X GET "${BASE_URL}/api/jobs" | jq '.' 2>/dev/null || curl -s -X GET "${BASE_URL}/api/jobs"
+            ;;
+        "oneoff")
+            print_info "Creating a one-off job..."
+            curl -s -X POST "${BASE_URL}/api/jobs/oneoff" -w "\nHTTP Status: %{http_code}\n"
+            echo ""
+            ;;
+        "oneoffwithretry"|"retry")
+            print_info "Creating a one-off job with retry..."
+            curl -s -X POST "${BASE_URL}/api/jobs/oneoffwithretry" -w "\nHTTP Status: %{http_code}\n"
+            echo ""
             ;;
         *)
             print_error "Unknown curl command: $2"
-            echo "Usage: ./app.sh curl [all|get {jobId}|create]"
+            echo "Usage: ./app.sh curl [workflow|oneoff|oneoffwithretry]"
             return 1
             ;;
     esac
@@ -261,9 +256,9 @@ case "${1:-}" in
         echo "  curl    - Execute curl commands to test API"
         echo ""
         echo "Curl subcommands:"
-        echo "  curl all          - Get all jobs (default)"
-        echo "  curl get {jobId}  - Get job by ID"
-        echo "  curl create       - Create a new job"
+        echo "  curl workflow          - Create a workflow job (default)"
+        echo "  curl oneoff            - Create a one-off job"
+        echo "  curl oneoffwithretry   - Create a one-off job with retry"
         echo ""
         exit 1
         ;;
