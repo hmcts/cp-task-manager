@@ -68,6 +68,36 @@ spring.datasource.username=postgres
 spring.datasource.password=postgres
 ```
 
+### Running Liquibase Migrations Manually
+
+**Note**: Liquibase migrations run automatically when the Spring Boot application starts. However, if you need to run migrations manually (e.g., for database setup before starting the application), you can use the provided script:
+
+1. **Using the provided script** (requires Liquibase CLI):
+```bash
+# Make the script executable (if not already)
+chmod +x run-liquibase.sh
+
+# Run the script
+./run-liquibase.sh
+```
+
+The script will:
+- Connect to the PostgreSQL database using credentials from `application.properties`
+- Run all pending Liquibase migrations
+- Display the migration status
+
+2. **Installing Liquibase CLI** (if not already installed):
+   - **macOS**: `brew install liquibase`
+   - **Linux/Windows**: Download from [https://www.liquibase.org/download](https://www.liquibase.org/download)
+
+3. **Alternative**: If Liquibase CLI is not available, migrations will run automatically when you start the Spring Boot application. Simply start the application and Liquibase will apply any pending migrations.
+
+**Database Connection Details** (used by `run-liquibase.sh`):
+- URL: `jdbc:postgresql://localhost:5435/job_scheduler_db`
+- Username: `postgres`
+- Password: `postgres`
+- Changelog: `classpath:liquibase/jobstore-db-changelog.xml`
+
 ## Running the Application
 
 ### Using Gradle
@@ -118,7 +148,9 @@ Creates a one-off task with retry capability:
 POST /api/jobs/oneoffwithretry
 ```
 
-**Note**: The example application uses hardcoded task data. For production use, modify `JobController` to accept request bodies.
+**Note**: 
+- The example application uses hardcoded task data. For production use, modify `JobController` to accept request bodies.
+- The `/oneoffwithretry` endpoint creates a job with priority 1 (highest priority) to demonstrate priority-based scheduling.
 
 ## Job Executor
 
@@ -241,8 +273,18 @@ The `jobs` table is automatically created via Liquibase with the following struc
 ### Schema Management
 
 Database schema is managed via Liquibase changesets in the `jobstore-liquibase` module:
-- `001-initial-schema.xml`: Initial schema creation
-- `002-rename-task-columns.xml`: Migration for column renaming (if upgrading)
+- `001-initial-schema.xml`: Initial schema creation with all tables and columns
+
+The schema includes:
+- `jobs` table with all required columns (`assigned_task_name`, `assigned_task_start_time`, etc.)
+- Automatic UUID generation for `job_id`
+- JSONB support for `job_data` (PostgreSQL)
+- Default values for `priority` (10) and `retry_attempts_remaining` (0)
+
+**Note**: 
+- Liquibase migrations run automatically when the Spring Boot application starts. The application will apply any pending migrations on startup.
+- To run migrations manually before starting the application, use the `run-liquibase.sh` script (see [Database Setup](#database-setup) section for details).
+- For manual execution, you can also use the Liquibase CLI directly or restart the application to trigger migrations.
 
 ## Retry Mechanism
 
