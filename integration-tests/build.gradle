@@ -10,11 +10,14 @@ dependencies {
     // Depend on jobstore-liquibase for database schema
     implementation project(':jobstore-liquibase')
     
+    // Spring Boot Web (for Jackson ObjectMapper auto-configuration)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    
+    // Spring Boot Data JPA
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    
     // Spring Boot Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    
-    // Spring Boot Data JPA for testing
-    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     
     // H2 Database for integration tests
     testRuntimeOnly 'com.h2database:h2'
