@@ -1,0 +1,38 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+}
+
+dependencies {
+    // Depend on task-manager-service
+    implementation project(':task-manager-service')
+    
+    // Depend on jobstore-liquibase for database schema
+    implementation project(':jobstore-liquibase')
+    
+    // Spring Boot Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    
+    // Spring Boot Data JPA for testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    
+    // H2 Database for integration tests
+    testRuntimeOnly 'com.h2database:h2'
+    
+    // PostgreSQL Driver (for Testcontainers if needed later)
+    testRuntimeOnly 'org.postgresql:postgresql'
+    
+    // Liquibase for Database Migration
+    testImplementation 'org.liquibase:liquibase-core'
+    
+    // Awaitility for async testing
+    testImplementation 'org.awaitility:awaitility:4.2.0'
+    
+    // JUnit Platform Launcher
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
