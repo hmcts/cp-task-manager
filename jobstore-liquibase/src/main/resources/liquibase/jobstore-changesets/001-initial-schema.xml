@@ -15,7 +15,7 @@
             <column name="assigned_task_name" type="TEXT"/>
             <column name="assigned_task_start_time" type="TIMESTAMP WITH TIME ZONE"/>
 
-            <column name="job_data" type="JSONB">
+            <column name="job_data" type="TEXT">
                 <constraints nullable="false"/>
             </column>
                <column name="retry_attempts_remaining" type="int" defaultValue="0">
