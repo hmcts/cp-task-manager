@@ -32,7 +32,7 @@ import org.springframework.test.annotation.DirtiesContext;
  */
 @IntegrationTestConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class ConcurrentExecutionIntegrationTest extends IntegrationTestBase {
+class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
 
     @Autowired
     private ExecutionService executionService;

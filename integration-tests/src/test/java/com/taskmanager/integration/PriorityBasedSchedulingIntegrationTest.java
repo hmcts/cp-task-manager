@@ -29,7 +29,7 @@ import org.springframework.test.annotation.DirtiesContext;
  */
 @IntegrationTestConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class PriorityBasedSchedulingIntegrationTest {
+class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase {
 
     @Autowired
     private ExecutionService executionService;

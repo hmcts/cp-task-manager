@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @IntegrationTestConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class TaskRegistryIntegrationTest {
+class TaskRegistryIntegrationTest extends PostgresIntegrationTestBase {
 
     @Autowired
     private TaskRegistry taskRegistry;

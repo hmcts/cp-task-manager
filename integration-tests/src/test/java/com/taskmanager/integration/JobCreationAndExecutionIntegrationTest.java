@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Integration tests for job creation and execution flow.
@@ -27,7 +28,8 @@ import org.springframework.test.annotation.DirtiesContext;
  */
 @IntegrationTestConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class JobCreationAndExecutionIntegrationTest {
+@TestPropertySource(properties = {"job.executor.poll-interval=3000"})
+class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase {
 
     @Autowired
     private ExecutionService executionService;
@@ -44,7 +46,7 @@ class JobCreationAndExecutionIntegrationTest {
     private JsonObject testJobData;
 
     @Autowired
-    JdbcTemplate jdbcTemplate;
+    private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void setUp() {
@@ -108,31 +110,30 @@ class JobCreationAndExecutionIntegrationTest {
         });
     }
 
-//    @Test
-//    void testJobWithFutureStartTime() {
-//        // Given - Create a job with future start time
-//        ExecutionInfo executionInfo = new ExecutionInfo(
-//                testJobData,
-//                "TEST_COMPLETED_TASK",
-//                now().plusSeconds(5), // Future time
-//                ExecutionStatus.STARTED,
-//                false
-//        );
-//        executionService.executeWith(executionInfo);
-//
-//        // Then - Job should exist but not be executed yet
-//        await().untilAsserted(() -> {
-//            var jobs = jobService.getUnassignedJobs(10);
-//            assertThat(jobs).hasSize(1);
-//            assertThat(jobs.get(0).getAssignedTaskStartTime()).isAfter(now());
-//        });
-//
-//        // Wait for start time to pass and job to execute
-//        await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
-//            var jobs = jobRepository.findAll();
-//            assertThat(jobs).isEmpty(); // Job should be completed and deleted
-//        });
-//    }
+    @Test
+    void testJobWithFutureStartTime() {
+        // Given - Create a job with future start time
+        ExecutionInfo executionInfo = new ExecutionInfo(
+                testJobData,
+                "TEST_COMPLETED_TASK",
+                now().plusSeconds(8), // Future time
+                ExecutionStatus.STARTED,
+                false
+        );
+        executionService.executeWith(executionInfo);
+
+        // Then - Job should exist but not be executed yet
+        await().untilAsserted(() -> {
+            var jobs = jobService.getUnassignedJobs(10);
+            assertThat(jobs).hasSize(1);
+        });
+
+        // Wait for start time to pass and job to execute
+        await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
+            var jobs = jobRepository.findAll();
+            assertThat(jobs).isEmpty(); // Job should be completed and deleted
+        });
+    }
 
     @Test
     void testJobDataPersistence() {

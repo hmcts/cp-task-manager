@@ -29,7 +29,7 @@ import static org.awaitility.Awaitility.await;
  */
 @IntegrationTestConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class RetryMechanismIntegrationTest {
+class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
 
     @Autowired
     private ExecutionService executionService;
