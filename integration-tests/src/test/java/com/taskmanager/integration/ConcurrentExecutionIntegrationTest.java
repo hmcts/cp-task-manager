@@ -19,6 +19,7 @@ import com.taskmanager.persistence.repository.JobRepository;
 import com.taskmanager.service.ExecutionService;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +42,9 @@ class ConcurrentExecutionIntegrationTest extends IntegrationTestBase {
 
     private JsonObject testJobData;
 
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+
     @BeforeEach
     void setUp() {
         testJobData = Json.createObjectBuilder()
@@ -48,24 +52,27 @@ class ConcurrentExecutionIntegrationTest extends IntegrationTestBase {
                 .build();
     }
 
-    @Autowired
-    JdbcTemplate jdbcTemplate;
+    @AfterEach
+    void tearDown() {
+        jdbcTemplate.execute("delete from JOBS");
+        final Integer jobs = jdbcTemplate.queryForObject("select count(*) from JOBS", Integer.class);
+        assertThat(jobs).isEqualTo(0);
+    }
 
     @Test
-    void liquibaseRan() {
-        Integer count = jdbcTemplate.queryForObject(
-                "select count(*) from DATABASECHANGELOG", Integer.class);
+    void testLiquibaseRan() {
+        final Integer count = jdbcTemplate.queryForObject("select count(*) from DATABASECHANGELOG", Integer.class);
         assertThat(count).isGreaterThan(0);
     }
 
     @Test
     void testMultipleJobsExecutedConcurrently() {
         // Given - Create multiple jobs
-        int jobCount = 5;
-        ZonedDateTime startTime = now().minusSeconds(1);
+        final int jobCount = 5;
+        final ZonedDateTime startTime = now().minusSeconds(1);
 
         for (int i = 0; i < jobCount; i++) {
-            ExecutionInfo executionInfo = new ExecutionInfo(
+            final ExecutionInfo executionInfo = new ExecutionInfo(
                     testJobData,
                     "TEST_COMPLETED_TASK",
                     startTime,
@@ -86,7 +93,7 @@ class ConcurrentExecutionIntegrationTest extends IntegrationTestBase {
     @Test
     void testJobLockingPreventsDuplicateExecution() {
         // Given - Create a single job
-        ExecutionInfo executionInfo = new ExecutionInfo(
+        final ExecutionInfo executionInfo = new ExecutionInfo(
                 testJobData,
                 "TEST_COMPLETED_TASK",
                 now().minusSeconds(1),
@@ -99,7 +106,7 @@ class ConcurrentExecutionIntegrationTest extends IntegrationTestBase {
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
             List<Job> jobs = jobRepository.findAll();
             if (!jobs.isEmpty()) {
-                Job job = jobs.get(0);
+                final Job job = jobs.get(0);
                 // Job should be locked (have workerId) or completed
                 assertThat(job.getWorkerId() != null).isTrue();
             }

@@ -4,30 +4,24 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.3.xsd">
 
-    <changeSet id="job-store-001" author="Tech Pod"
+    <changeSet id="job-store-001" author="Hasan Shaik"
                logicalFilePath="001-initial-schema.xml">
-        <preConditions>
-            <dbms type="h2"/>
-        </preConditions>
         <createTable tableName="jobs">
             <column name="job_id" type="UUID">
                 <constraints primaryKey="true"/>
             </column>
             <column name="worker_id" type="UUID"/>
-            <column name="worker_lock_time" type="TIMESTAMP"/>
-            <column name="assigned_task_name" type="VARCHAR(255)">
+            <column name="worker_lock_time" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="assigned_task_name" type="TEXT"/>
+            <column name="assigned_task_start_time" type="TIMESTAMP WITH TIME ZONE"/>
+
+            <column name="job_data" type="TEXT">
                 <constraints nullable="false"/>
             </column>
-            <column name="assigned_task_start_time" type="TIMESTAMP">
+            <column name="retry_attempts_remaining" type="int" defaultValue="0">
                 <constraints nullable="false"/>
             </column>
-            <column name="job_data" type="CLOB">
-                <constraints nullable="false"/>
-            </column>
-            <column name="retry_attempts_remaining" type="INT" defaultValue="0">
-                <constraints nullable="false"/>
-            </column>
-            <column name="priority" type="INT" defaultValue="10">
+            <column name="priority" type="int" defaultValue="10">
                 <constraints nullable="false"/>
             </column>
         </createTable>

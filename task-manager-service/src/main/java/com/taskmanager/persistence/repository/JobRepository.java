@@ -41,36 +41,6 @@ import java.util.UUID;
 public interface JobRepository extends JpaRepository<Job, UUID> {
 
     /**
-     * SQL constant for inserting a new job (deprecated, use insertJob method).
-     */
-    String INSERT_JOB_SQL = "INSERT INTO jobs(job_id,worker_id,worker_lock_time,assigned_task_name,assigned_task_start_time,job_data,retry_attempts_remaining) values (?,?,?,?,?,to_jsonb(?::json),?)";
-    
-    /**
-     * SQL constant for updating job data (deprecated, use updateJobData method).
-     */
-    String UPDATE_JOB_DATA_SQL = "UPDATE jobs SET job_data = to_jsonb(?::json) WHERE job_id = ?";
-    
-    /**
-     * SQL constant for updating next task details (deprecated, use updateNextTaskDetails method).
-     */
-    String UPDATE_NEXT_TASK_DETAILS_SQL = "UPDATE jobs set assigned_task_name= ?, assigned_task_start_time= ?, retry_attempts_remaining= ? where job_id= ? ";
-    
-    /**
-     * SQL constant for updating retry details (deprecated, use updateNextTaskRetryDetails method).
-     */
-    String UPDATE_NEXT_TASK_RETRY_DETAILS_SQL = "UPDATE jobs set assigned_task_start_time= ?, retry_attempts_remaining= ? where job_id= ? ";
-    
-    /**
-     * SQL constant for deleting a job (deprecated, use deleteJob method).
-     */
-    String DELETE_JOB_SQL = "DELETE from jobs where job_id= ? ";
-    
-    /**
-     * SQL constant for releasing a job lock (deprecated, use releaseJob method).
-     */
-    String RELEASE_JOB_SQL = "UPDATE jobs set worker_id= null, worker_lock_time= null where job_id= ? ";
-
-    /**
      * Finds all unassigned jobs that are ready to be executed.
      * 
      * <p>This query uses pessimistic write locking to prevent concurrent access.
@@ -130,7 +100,7 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
      * @param retryAttemptsRemaining the number of retry attempts remaining
      */
     @Modifying
-    @Query(value = "INSERT INTO jobs(job_id,worker_id,worker_lock_time,assigned_task_name,assigned_task_start_time,job_data,retry_attempts_remaining) values (:jobId,:workerId,:workerLockTime,:assignedTaskName,:assignedTaskStartTime,to_jsonb(CAST(:jobData AS text)),:retryAttemptsRemaining)", nativeQuery = true)
+    @Query(value = "INSERT INTO jobs(job_id,worker_id,worker_lock_time,assigned_task_name,assigned_task_start_time,job_data,retry_attempts_remaining) values (:jobId,:workerId,:workerLockTime,:assignedTaskName,:assignedTaskStartTime,:jobData,:retryAttemptsRemaining)", nativeQuery = true)
     void insertJob(@Param("jobId") UUID jobId,
                    @Param("workerId") UUID workerId,
                    @Param("workerLockTime") ZonedDateTime workerLockTime,
@@ -148,7 +118,7 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
      * @param jobId the unique job identifier
      */
     @Modifying
-    @Query(value = "UPDATE jobs SET job_data = to_jsonb(CAST(:jobData AS text)) WHERE job_id = :jobId", nativeQuery = true)
+    @Query(value = "UPDATE jobs SET job_data = :jobData WHERE job_id = :jobId", nativeQuery = true)
     void updateJobData(@Param("jobData") String jobData,
                        @Param("jobId") UUID jobId);
 

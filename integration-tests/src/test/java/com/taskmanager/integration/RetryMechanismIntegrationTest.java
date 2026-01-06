@@ -9,9 +9,11 @@ import com.taskmanager.persistence.service.JobService;
 import com.taskmanager.service.ExecutionService;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.ZonedDateTime;
@@ -40,11 +42,21 @@ class RetryMechanismIntegrationTest {
 
     private JsonObject testJobData;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @BeforeEach
     void setUp() {
         testJobData = Json.createObjectBuilder()
                 .add("test", "data")
                 .build();
+    }
+
+    @AfterEach
+    void tearDown() {
+        jdbcTemplate.execute("delete from JOBS");
+        final Integer jobs = jdbcTemplate.queryForObject("select count(*) from JOBS", Integer.class);
+        assertThat(jobs).isEqualTo(0);
     }
 
     @Test

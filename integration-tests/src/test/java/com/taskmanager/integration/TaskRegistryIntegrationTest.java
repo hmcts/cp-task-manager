@@ -5,8 +5,10 @@ import com.taskmanager.integration.tasks.TestCompletedTask;
 import com.taskmanager.integration.tasks.TestRetryTask;
 import com.taskmanager.service.task.ExecutableTask;
 import com.taskmanager.service.task.TaskRegistry;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.Optional;
@@ -23,6 +25,16 @@ class TaskRegistryIntegrationTest {
 
     @Autowired
     private TaskRegistry taskRegistry;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @AfterEach
+    void tearDown() {
+        jdbcTemplate.execute("delete from JOBS");
+        final Integer jobs = jdbcTemplate.queryForObject("select count(*) from JOBS", Integer.class);
+        assertThat(jobs).isEqualTo(0);
+    }
 
     @Test
     void testTaskAutoRegistration() {
