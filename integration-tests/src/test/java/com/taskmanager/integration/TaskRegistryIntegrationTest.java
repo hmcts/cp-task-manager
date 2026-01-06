@@ -1,5 +1,6 @@
 package com.taskmanager.integration;
 
+import com.taskmanager.integration.config.IntegrationTestConfiguration;
 import com.taskmanager.integration.tasks.TestCompletedTask;
 import com.taskmanager.integration.tasks.TestRetryTask;
 import com.taskmanager.service.task.ExecutableTask;

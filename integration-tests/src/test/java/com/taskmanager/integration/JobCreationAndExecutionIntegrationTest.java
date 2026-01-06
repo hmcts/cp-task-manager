@@ -3,6 +3,7 @@ package com.taskmanager.integration;
 import com.taskmanager.domain.ExecutionInfo;
 import com.taskmanager.domain.ExecutionStatus;
 import com.taskmanager.domain.converter.JsonObjectConverter;
+import com.taskmanager.integration.config.IntegrationTestConfiguration;
 import com.taskmanager.persistence.entity.Job;
 import com.taskmanager.persistence.repository.JobRepository;
 import com.taskmanager.persistence.service.JobService;
@@ -13,10 +14,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
-
-import java.time.ZonedDateTime;
-import java.util.Optional;
-import java.util.UUID;
 
 import static java.time.ZonedDateTime.now;
 import static org.assertj.core.api.Assertions.assertThat;

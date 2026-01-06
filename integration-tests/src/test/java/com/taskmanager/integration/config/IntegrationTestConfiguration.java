@@ -1,14 +1,15 @@
-package com.taskmanager.integration;
-
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
+package com.taskmanager.integration.config;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import com.taskmanager.integration.IntegrationTestApplication;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Meta-annotation for integration tests.
@@ -17,7 +18,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest(classes = IntegrationTestApplication.class)
-@Import(TestConfiguration.class)
+@Import({JacksonTestConfig.class, LiquibaseTestConfig.class})
 @ActiveProfiles("test")
 @TestPropertySource(locations = "classpath:application-test.properties")
 public @interface IntegrationTestConfiguration {

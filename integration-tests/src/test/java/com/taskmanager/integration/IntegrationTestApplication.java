@@ -1,7 +1,8 @@
 package com.taskmanager.integration;
 
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -10,9 +11,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  */
 @SpringBootApplication(scanBasePackages = "com.taskmanager")
 @EnableScheduling
+@EnableJpaRepositories(basePackages = "com.taskmanager.persistence.repository")
+@EntityScan(basePackages = "com.taskmanager.persistence.entity")
 public class IntegrationTestApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(IntegrationTestApplication.class, args);
-    }
 }
 

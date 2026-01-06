@@ -2,6 +2,7 @@ package com.taskmanager.integration;
 
 import com.taskmanager.domain.ExecutionInfo;
 import com.taskmanager.domain.ExecutionStatus;
+import com.taskmanager.integration.config.IntegrationTestConfiguration;
 import com.taskmanager.persistence.entity.Job;
 import com.taskmanager.persistence.repository.JobRepository;
 import com.taskmanager.persistence.service.JobService;

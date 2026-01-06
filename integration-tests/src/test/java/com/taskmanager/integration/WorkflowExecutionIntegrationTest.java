@@ -2,6 +2,7 @@ package com.taskmanager.integration;
 
 import com.taskmanager.domain.ExecutionInfo;
 import com.taskmanager.domain.ExecutionStatus;
+import com.taskmanager.integration.config.IntegrationTestConfiguration;
 import com.taskmanager.persistence.entity.Job;
 import com.taskmanager.persistence.repository.JobRepository;
 import com.taskmanager.service.ExecutionService;
@@ -12,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 
-import java.time.ZonedDateTime;
 import java.util.List;
 
 import static java.time.ZonedDateTime.now;

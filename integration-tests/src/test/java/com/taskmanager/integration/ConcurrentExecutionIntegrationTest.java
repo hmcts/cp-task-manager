@@ -1,16 +1,8 @@
 package com.taskmanager.integration;
 
-import com.taskmanager.domain.ExecutionInfo;
-import com.taskmanager.domain.ExecutionStatus;
-import com.taskmanager.persistence.entity.Job;
-import com.taskmanager.persistence.repository.JobRepository;
-import com.taskmanager.service.ExecutionService;
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
+import static java.time.ZonedDateTime.now;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -19,9 +11,19 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static java.time.ZonedDateTime.now;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
+import com.taskmanager.domain.ExecutionInfo;
+import com.taskmanager.domain.ExecutionStatus;
+import com.taskmanager.integration.config.IntegrationTestConfiguration;
+import com.taskmanager.persistence.entity.Job;
+import com.taskmanager.persistence.repository.JobRepository;
+import com.taskmanager.service.ExecutionService;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 
 /**
  * Integration tests for concurrent job execution.
@@ -29,7 +31,7 @@ import static org.awaitility.Awaitility.await;
  */
 @IntegrationTestConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class ConcurrentExecutionIntegrationTest {
+class ConcurrentExecutionIntegrationTest extends IntegrationTestBase {
 
     @Autowired
     private ExecutionService executionService;
@@ -44,6 +46,16 @@ class ConcurrentExecutionIntegrationTest {
         testJobData = Json.createObjectBuilder()
                 .add("test", "data")
                 .build();
+    }
+
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+
+    @Test
+    void liquibaseRan() {
+        Integer count = jdbcTemplate.queryForObject(
+                "select count(*) from DATABASECHANGELOG", Integer.class);
+        assertThat(count).isGreaterThan(0);
     }
 
     @Test
@@ -89,7 +101,7 @@ class ConcurrentExecutionIntegrationTest {
             if (!jobs.isEmpty()) {
                 Job job = jobs.get(0);
                 // Job should be locked (have workerId) or completed
-                assertThat(job.getWorkerId() != null || jobs.isEmpty()).isTrue();
+                assertThat(job.getWorkerId() != null).isTrue();
             }
         });
     }
