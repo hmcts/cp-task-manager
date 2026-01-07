@@ -67,7 +67,7 @@ jobs:
         # - It's available to download and inspect from the GitHub Actions UI
       - name: Upload SBOM
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: sbom
           path: build/resources/main/META-INF/sbom/application.cdx.json
