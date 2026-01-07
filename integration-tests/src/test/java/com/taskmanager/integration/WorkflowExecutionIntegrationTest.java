@@ -57,7 +57,7 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
     @Test
     void testWorkflowExecution() {
         // Given - Create a workflow job starting with TEST_WORKFLOW_TASK_1
-        ExecutionInfo executionInfo = new ExecutionInfo(
+        final ExecutionInfo executionInfo = new ExecutionInfo(
                 testJobData,
                 "TEST_WORKFLOW_TASK_1",
                 now().minusSeconds(1),
@@ -69,12 +69,12 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for workflow to complete
         // Then - Job should progress through workflow and eventually complete
         await().atMost(java.time.Duration.ofSeconds(15)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            final List<Job> jobs = jobRepository.findAll();
 
             // Workflow should eventually complete (job deleted)
             // Or if still in progress, should be on second task
             if (!jobs.isEmpty()) {
-                Job job = jobs.get(0);
+                final Job job = jobs.get(0);
                 // Should be on TEST_WORKFLOW_TASK_2 or completed
                 assertThat(job.getAssignedTaskName())
                         .isIn("TEST_WORKFLOW_TASK_1", "TEST_WORKFLOW_TASK_2");
@@ -88,7 +88,7 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
     @Test
     void testWorkflowTaskTransition() {
         // Given - Create a workflow job
-        ExecutionInfo executionInfo = new ExecutionInfo(
+        final ExecutionInfo executionInfo = new ExecutionInfo(
                 testJobData,
                 "TEST_WORKFLOW_TASK_1",
                 now().minusSeconds(1),
@@ -100,7 +100,7 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for first task to execute
         // Then - Job should transition to second task
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            final List<Job> jobs = jobRepository.findAll();
             if (!jobs.isEmpty()) {
                 Job job = jobs.get(0);
                 // Should have transitioned to TEST_WORKFLOW_TASK_2
@@ -112,7 +112,7 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
     @Test
     void testWorkflowCompletion() {
         // Given - Create a workflow job
-        ExecutionInfo executionInfo = new ExecutionInfo(
+        final ExecutionInfo executionInfo = new ExecutionInfo(
                 testJobData,
                 "TEST_WORKFLOW_TASK_1",
                 now().minusSeconds(1),
@@ -124,7 +124,7 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for complete workflow execution
         // Then - Job should be deleted after completion
         await().atMost(java.time.Duration.ofSeconds(20)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            final List<Job> jobs = jobRepository.findAll();
             assertThat(jobs).isEmpty(); // Workflow completed, job deleted
         });
     }

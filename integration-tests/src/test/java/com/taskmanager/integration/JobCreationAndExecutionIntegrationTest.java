@@ -66,7 +66,7 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
     @Test
     void testJobCreation() {
         // Given
-        ExecutionInfo executionInfo = new ExecutionInfo(
+        final ExecutionInfo executionInfo = new ExecutionInfo(
                 testJobData,
                 "TEST_COMPLETED_TASK",
                 now(),
@@ -79,10 +79,10 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
 
         // Then - Job should be persisted
         await().untilAsserted(() -> {
-            var jobs = jobService.getUnassignedJobs(10);
+            final var jobs = jobService.getUnassignedJobs(10);
             assertThat(jobs).hasSize(1);
 
-            Job job = jobs.get(0);
+            final Job job = jobs.get(0);
             assertThat(job.getAssignedTaskName()).isEqualTo("TEST_COMPLETED_TASK");
             assertThat(job.getJobData()).isNotNull();
             assertThat(job.getWorkerId()).isNull();
@@ -93,7 +93,7 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
     @Test
     void testJobExecutionAndCompletion() {
         // Given - Create a job
-        ExecutionInfo executionInfo = new ExecutionInfo(
+        final ExecutionInfo executionInfo = new ExecutionInfo(
                 testJobData,
                 "TEST_COMPLETED_TASK",
                 now().minusSeconds(1), // Past time so it can execute immediately
@@ -105,7 +105,7 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
         // Wait for job to be assigned and executed
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
             // Job should be deleted after completion
-            var jobs = jobRepository.findAll();
+            final var jobs = jobRepository.findAll();
             assertThat(jobs).isEmpty();
         });
     }
@@ -113,7 +113,7 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
     @Test
     void testJobWithFutureStartTime() {
         // Given - Create a job with future start time
-        ExecutionInfo executionInfo = new ExecutionInfo(
+        final ExecutionInfo executionInfo = new ExecutionInfo(
                 testJobData,
                 "TEST_COMPLETED_TASK",
                 now().plusSeconds(8), // Future time
@@ -124,13 +124,13 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
 
         // Then - Job should exist but not be executed yet
         await().untilAsserted(() -> {
-            var jobs = jobService.getUnassignedJobs(10);
+            final var jobs = jobService.getUnassignedJobs(10);
             assertThat(jobs).hasSize(1);
         });
 
         // Wait for start time to pass and job to execute
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
-            var jobs = jobRepository.findAll();
+            final var jobs = jobRepository.findAll();
             assertThat(jobs).isEmpty(); // Job should be completed and deleted
         });
     }
@@ -138,13 +138,13 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
     @Test
     void testJobDataPersistence() {
         // Given
-        JsonObject complexData = Json.createObjectBuilder()
+        final JsonObject complexData = Json.createObjectBuilder()
                 .add("name", "Test Job")
                 .add("count", 100)
                 .add("active", true)
                 .build();
 
-        ExecutionInfo executionInfo = new ExecutionInfo(
+        final ExecutionInfo executionInfo = new ExecutionInfo(
                 complexData,
                 "TEST_COMPLETED_TASK",
                 now().minusSeconds(1),
@@ -157,10 +157,10 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
 
         // Then - Verify job data is persisted correctly
         await().untilAsserted(() -> {
-            var jobs = jobService.getUnassignedJobs(10);
+            final var jobs = jobService.getUnassignedJobs(10);
             if (!jobs.isEmpty()) {
-                Job job = jobs.get(0);
-                JsonObject persistedData = job.getJobData();
+                final Job job = jobs.get(0);
+                final JsonObject persistedData = job.getJobData();
                 assertThat(persistedData.getString("name")).isEqualTo("Test Job");
                 assertThat(persistedData.getInt("count")).isEqualTo(100);
                 assertThat(persistedData.getBoolean("active")).isTrue();

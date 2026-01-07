@@ -31,7 +31,7 @@ public abstract class PostgresIntegrationTestBase {
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "none");
 
         // Liquibase MUST run
-        registry.add("spring.liquibase.enabled", () -> "true");
+//        registry.add("spring.liquibase.enabled", () -> "true");
 
         // Always use UTC
         registry.add("spring.jpa.properties.hibernate.jdbc.time_zone", () -> "UTC");

@@ -41,11 +41,11 @@ class TaskRegistryIntegrationTest extends PostgresIntegrationTestBase {
         // Given/When - Tasks should be auto-registered on application startup
         
         // Then - Test tasks should be registered
-        Optional<ExecutableTask> completedTask = taskRegistry.getTask("TEST_COMPLETED_TASK");
+        final Optional<ExecutableTask> completedTask = taskRegistry.getTask("TEST_COMPLETED_TASK");
         assertThat(completedTask).isPresent();
         assertThat(completedTask.get()).isInstanceOf(TestCompletedTask.class);
 
-        Optional<ExecutableTask> retryTask = taskRegistry.getTask("TEST_RETRY_TASK");
+        final Optional<ExecutableTask> retryTask = taskRegistry.getTask("TEST_RETRY_TASK");
         assertThat(retryTask).isPresent();
         assertThat(retryTask.get()).isInstanceOf(TestRetryTask.class);
     }
@@ -53,7 +53,7 @@ class TaskRegistryIntegrationTest extends PostgresIntegrationTestBase {
     @Test
     void testTaskNotFound() {
         // Given/When - Query for non-existent task
-        Optional<ExecutableTask> task = taskRegistry.getTask("NON_EXISTENT_TASK");
+        final Optional<ExecutableTask> task = taskRegistry.getTask("NON_EXISTENT_TASK");
 
         // Then - Should return empty
         assertThat(task).isEmpty();
@@ -63,7 +63,7 @@ class TaskRegistryIntegrationTest extends PostgresIntegrationTestBase {
     void testRetryAttemptsLookup() {
         // Given - Task with retry configuration
         // When
-        Integer retryAttempts = taskRegistry.findRetryAttemptsRemainingFor("TEST_RETRY_TASK");
+        final Integer retryAttempts = taskRegistry.findRetryAttemptsRemainingFor("TEST_RETRY_TASK");
 
         // Then - Should return number of retry attempts (3)
         assertThat(retryAttempts).isEqualTo(3);
@@ -73,7 +73,7 @@ class TaskRegistryIntegrationTest extends PostgresIntegrationTestBase {
     void testRetryAttemptsLookupForTaskWithoutRetry() {
         // Given - Task without retry configuration
         // When
-        Integer retryAttempts = taskRegistry.findRetryAttemptsRemainingFor("TEST_COMPLETED_TASK");
+        final Integer retryAttempts = taskRegistry.findRetryAttemptsRemainingFor("TEST_COMPLETED_TASK");
 
         // Then - Should return 0
         assertThat(retryAttempts).isEqualTo(0);
@@ -83,7 +83,7 @@ class TaskRegistryIntegrationTest extends PostgresIntegrationTestBase {
     void testRetryAttemptsLookupForNonExistentTask() {
         // Given - Non-existent task
         // When
-        Integer retryAttempts = taskRegistry.findRetryAttemptsRemainingFor("NON_EXISTENT_TASK");
+        final Integer retryAttempts = taskRegistry.findRetryAttemptsRemainingFor("NON_EXISTENT_TASK");
 
         // Then - Should return 0
         assertThat(retryAttempts).isEqualTo(0);

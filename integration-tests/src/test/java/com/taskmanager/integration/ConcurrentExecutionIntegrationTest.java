@@ -43,7 +43,7 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
     private JsonObject testJobData;
 
     @Autowired
-    JdbcTemplate jdbcTemplate;
+    private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void setUp() {
@@ -60,8 +60,8 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
     }
 
     @Test
-    void testLiquibaseRan() {
-        final Integer count = jdbcTemplate.queryForObject("select count(*) from DATABASECHANGELOG", Integer.class);
+    void testFlywayRan() {
+        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM flyway_schema_history", Integer.class);
         assertThat(count).isGreaterThan(0);
     }
 
@@ -85,7 +85,7 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for all jobs to execute
         // Then - All jobs should be executed and deleted
         await().atMost(java.time.Duration.ofSeconds(15)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            final List<Job> jobs = jobRepository.findAll();
             assertThat(jobs).isEmpty(); // All jobs should be completed
         });
     }
@@ -116,8 +116,8 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
     @Test
     void testBatchProcessing() {
         // Given - Create more jobs than batch size
-        int jobCount = 15; // More than default batch size of 10
-        ZonedDateTime startTime = now().minusSeconds(1);
+        final int jobCount = 15; // More than default batch size of 10
+        final ZonedDateTime startTime = now().minusSeconds(1);
 
         for (int i = 0; i < jobCount; i++) {
             ExecutionInfo executionInfo = new ExecutionInfo(
@@ -133,7 +133,7 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for all jobs to be processed
         // Then - All jobs should eventually be executed
         await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            final List<Job> jobs = jobRepository.findAll();
             assertThat(jobs).isEmpty(); // All jobs should be completed
         });
     }
@@ -141,16 +141,16 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
     @Test
     void testConcurrentJobCreation() throws InterruptedException {
         // Given - Create jobs concurrently from multiple threads
-        int threadCount = 5;
-        int jobsPerThread = 2;
-        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-        CountDownLatch latch = new CountDownLatch(threadCount * jobsPerThread);
+        final int threadCount = 5;
+        final int jobsPerThread = 2;
+        final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        final CountDownLatch latch = new CountDownLatch(threadCount * jobsPerThread);
 
         // When - Create jobs concurrently
         for (int i = 0; i < threadCount; i++) {
             executor.submit(() -> {
                 for (int j = 0; j < jobsPerThread; j++) {
-                    ExecutionInfo executionInfo = new ExecutionInfo(
+                    final ExecutionInfo executionInfo = new ExecutionInfo(
                             testJobData,
                             "TEST_COMPLETED_TASK",
                             now().minusSeconds(1),
@@ -169,7 +169,7 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
 
         // Then - All jobs should be created and eventually executed
         await().atMost(java.time.Duration.ofSeconds(20)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            final List<Job> jobs = jobRepository.findAll();
             assertThat(jobs).isEmpty(); // All jobs should be completed
         });
     }

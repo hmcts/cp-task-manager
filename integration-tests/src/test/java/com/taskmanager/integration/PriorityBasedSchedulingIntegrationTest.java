@@ -62,7 +62,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
     @Test
     void testJobsOrderedByPriority() {
         // Given - Create jobs with different priorities
-        ZonedDateTime startTime = now().minusSeconds(1);
+        final ZonedDateTime startTime = now().minusSeconds(1);
 
         // Create job with priority 5 (medium)
         executionService.executeWith(new ExecutionInfo(
@@ -81,7 +81,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
 
         // When - Query unassigned jobs
         await().untilAsserted(() -> {
-            List<Job> jobs = jobService.getUnassignedJobs(10);
+            final List<Job> jobs = jobService.getUnassignedJobs(10);
             assertThat(jobs.size()).isGreaterThanOrEqualTo(1);
 
             // Verify ordering: priority 1 first, then 5, then 10
@@ -96,10 +96,8 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
     @Test
     void testJobsWithSamePriorityOrderedByStartTime() {
         // Given - Create jobs with same priority but different start times
-        ZonedDateTime earlierTime = now().minusSeconds(5);
-        ZonedDateTime laterTime = now().minusSeconds(2);
-
-        UUID laterJobId = UUID.randomUUID();
+        final ZonedDateTime earlierTime = now().minusSeconds(5);
+        final ZonedDateTime laterTime = now().minusSeconds(2);
 
         // Create job with earlier start time
         executionService.executeWith(new ExecutionInfo(
@@ -113,7 +111,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
 
         // When - Query unassigned jobs
         await().untilAsserted(() -> {
-            List<Job> jobs = jobService.getUnassignedJobs(10);
+            final List<Job> jobs = jobService.getUnassignedJobs(10);
             assertThat(jobs.size()).isGreaterThanOrEqualTo(1);
 
             // Verify ordering: earlier start time first
@@ -127,7 +125,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
     @Test
     void testHighPriorityJobExecutedFirst() {
         // Given - Create multiple jobs with different priorities
-        ZonedDateTime startTime = now().minusSeconds(1);
+        final ZonedDateTime startTime = now().minusSeconds(1);
 
         // Create low priority job first
         executionService.executeWith(new ExecutionInfo(
@@ -142,7 +140,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
         // When - Wait for execution
         // Then - High priority job should be executed first
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
-            List<Job> remainingJobs = jobRepository.findAll();
+            final List<Job> remainingJobs = jobRepository.findAll();
             // Both should eventually complete, but high priority should complete first
             assertThat(remainingJobs.size()).isLessThanOrEqualTo(1);
         });
@@ -151,7 +149,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
     @Test
     void testDefaultPriorityIsTen() {
         // Given - Create job without specifying priority
-        ExecutionInfo executionInfo = new ExecutionInfo(
+        final ExecutionInfo executionInfo = new ExecutionInfo(
                 testJobData,
                 "TEST_COMPLETED_TASK",
                 now().minusSeconds(1),
@@ -165,7 +163,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
 
         // Then - Job should have default priority of 10
         await().untilAsserted(() -> {
-            List<Job> jobs = jobService.getUnassignedJobs(10);
+            final List<Job> jobs = jobService.getUnassignedJobs(10);
             if (!jobs.isEmpty()) {
                 assertThat(jobs.get(0).getPriority()).isEqualTo(10);
             }
