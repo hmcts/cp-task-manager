@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.jobscheduler'
-version = System.getProperty('API_SPEC_VERSION') ?: '0.0.1'
+version = System.getProperty('API_SPEC_VERSION') ?: '1.0.0'
 description = 'Spring Job Scheduler'
 
 def githubActor = project.findProperty("github.actor") ?: System.getenv("GITHUB_ACTOR")
