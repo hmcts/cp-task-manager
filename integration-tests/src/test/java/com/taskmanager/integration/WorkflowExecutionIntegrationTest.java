@@ -128,5 +128,25 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
             assertThat(jobs).isEmpty(); // Workflow completed, job deleted
         });
     }
+
+    @Test
+    void testSpawnMultipleTasksInTheWorkflow() {
+        // Given - Create a task that internally spawns/schedules multiple jobs
+        ExecutionInfo executionInfo = new ExecutionInfo(
+                testJobData,
+                "TEST_SCHEDULE_MULTI_JOBS_TASK",
+                now().minusSeconds(1),
+                ExecutionStatus.STARTED,
+                false
+        );
+        executionService.executeWith(executionInfo);
+
+        // When - Wait for all jobs execution
+        // Then - all the jobs should be deleted after completion
+        await().atMost(java.time.Duration.ofSeconds(20)).untilAsserted(() -> {
+            List<Job> jobs = jobRepository.findAll();
+            assertThat(jobs).isEmpty();
+        });
+    }
 }
 

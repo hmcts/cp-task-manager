@@ -1,8 +1,6 @@
 package com.taskmanager.service.task;
 
 
-import com.taskmanager.service.task.ExecutableTask;
-import com.taskmanager.service.task.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
