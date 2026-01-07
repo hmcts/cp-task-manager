@@ -4,7 +4,7 @@ import com.taskmanager.domain.ExecutionInfo;
 import com.taskmanager.domain.ExecutionStatus;
 import com.taskmanager.integration.config.IntegrationTestConfiguration;
 import com.taskmanager.persistence.entity.Job;
-import com.taskmanager.persistence.repository.JobRepository;
+import com.taskmanager.persistence.repository.JobsRepository;
 import com.taskmanager.persistence.service.JobService;
 import com.taskmanager.service.ExecutionService;
 import jakarta.json.Json;
@@ -38,7 +38,7 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
     private JobService jobService;
 
     @Autowired
-    private JobRepository jobRepository;
+    private JobsRepository jobsRepository;
 
     private JsonObject testJobData;
 
@@ -73,7 +73,7 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
 
         // When - Wait for first execution
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            List<Job> jobs = jobsRepository.findAll();
             // Job should still exist (not deleted) because it's retrying
             assertThat(jobs).isNotEmpty();
             
@@ -99,7 +99,7 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
 
         // When - Wait for first execution
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            List<Job> jobs = jobsRepository.findAll();
             if (!jobs.isEmpty()) {
                 Job job = jobs.get(0);
                 // Start time should be updated for retry (delayed)
@@ -123,7 +123,7 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for all retries to be exhausted
         // Then - Job should eventually be deleted or remain with 0 retries
         await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            List<Job> jobs = jobsRepository.findAll();
             if (!jobs.isEmpty()) {
                 Job job = jobs.get(0);
                 // After all retries, attempts should be 0 or job deleted
@@ -147,7 +147,7 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for execution
         // Then - Job should complete without retries
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            List<Job> jobs = jobsRepository.findAll();
             assertThat(jobs).isEmpty(); // Job should be completed and deleted
         });
     }

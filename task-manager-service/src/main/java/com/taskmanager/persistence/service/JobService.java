@@ -2,7 +2,7 @@ package com.taskmanager.persistence.service;
 
 import com.taskmanager.domain.converter.JsonObjectConverter;
 import com.taskmanager.persistence.entity.Job;
-import com.taskmanager.persistence.repository.JobRepository;
+import com.taskmanager.persistence.repository.JobsRepository;
 import jakarta.json.JsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -41,7 +41,7 @@ import java.util.UUID;
  * @author Task Manager Service
  * @since 1.0.0
  * @see Job
- * @see JobRepository
+ * @see JobsRepository
  */
 @Service
 public class JobService {
@@ -49,7 +49,7 @@ public class JobService {
     /**
      * Repository for job data access operations.
      */
-    private final JobRepository jobRepository;
+    private final JobsRepository jobsRepository;
     
     /**
      * Converter for JSON object serialization/deserialization.
@@ -59,12 +59,12 @@ public class JobService {
     /**
      * Constructs a new JobService with the specified dependencies.
      * 
-     * @param jobRepository the job repository, must not be null
+     * @param jobsRepository the job repository, must not be null
      * @param jsonObjectConverter the JSON object converter, must not be null
      */
     @Autowired
-    public JobService(JobRepository jobRepository, JsonObjectConverter jsonObjectConverter) {
-        this.jobRepository = jobRepository;
+    public JobService(JobsRepository jobsRepository, JsonObjectConverter jsonObjectConverter) {
+        this.jobsRepository = jobsRepository;
         this.jsonObjectConverter = jsonObjectConverter;
     }
 
@@ -86,7 +86,7 @@ public class JobService {
      */
     @Transactional
     public List<Job> getUnassignedJobs() {
-        return jobRepository.findUnassignedJobs(ZonedDateTime.now());
+        return jobsRepository.findUnassignedJobs(ZonedDateTime.now());
     }
 
     /**
@@ -106,7 +106,7 @@ public class JobService {
     @Transactional
     public List<Job> getUnassignedJobs(int batchSize) {
         Pageable pageable = PageRequest.of(0, batchSize);
-        return jobRepository.findUnassignedJobsWithLimit(ZonedDateTime.now(), pageable);
+        return jobsRepository.findUnassignedJobsWithLimit(ZonedDateTime.now(), pageable);
     }
 
     /**
@@ -122,11 +122,11 @@ public class JobService {
      */
     @Transactional
     public Job assignJobToWorker(UUID jobId, UUID workerId) {
-        Job job = jobRepository.findByJobId(jobId)
+        Job job = jobsRepository.findByJobId(jobId)
                 .orElseThrow(() -> new RuntimeException("Job not found with id: " + jobId));
         job.setWorkerId(workerId);
         job.setWorkerLockTime(ZonedDateTime.now());
-        return jobRepository.save(job);
+        return jobsRepository.save(job);
     }
 
     /**
@@ -140,12 +140,12 @@ public class JobService {
      */
     @Transactional
     public void decrementRetryAttempts(UUID jobId) {
-        Job job = jobRepository.findByJobId(jobId)
+        Job job = jobsRepository.findByJobId(jobId)
                 .orElseThrow(() -> new RuntimeException("Job not found with id: " + jobId));
         
         if (job.getRetryAttemptsRemaining() > 0) {
             job.setRetryAttemptsRemaining(job.getRetryAttemptsRemaining() - 1);
-            jobRepository.save(job);
+            jobsRepository.save(job);
         }
     }
     
@@ -159,7 +159,7 @@ public class JobService {
      */
     @Transactional
     public void insertJob(Job job) {
-        jobRepository.save(job);
+        jobsRepository.save(job);
     }
 
     /**
@@ -174,7 +174,7 @@ public class JobService {
     @Transactional
     public void updateJobTaskData(final UUID jobId, final JsonObject data) {
         String jobDataString = jsonObjectConverter.convertToDatabaseColumn(data);
-        jobRepository.updateJobData(jobDataString, jobId);
+        jobsRepository.updateJobData(jobDataString, jobId);
     }
 
     /**
@@ -191,7 +191,7 @@ public class JobService {
      */
     @Transactional
     public void updateNextTaskDetails(final UUID jobId, final String assignedTaskName, final ZonedDateTime startTime, final Integer retryAttemptsRemaining) {
-        jobRepository.updateNextTaskDetails(assignedTaskName, startTime, retryAttemptsRemaining, jobId);
+        jobsRepository.updateNextTaskDetails(assignedTaskName, startTime, retryAttemptsRemaining, jobId);
     }
 
     /**
@@ -204,7 +204,7 @@ public class JobService {
      */
     @Transactional
     public void deleteJob(final UUID jobId) {
-        jobRepository.deleteJob(jobId);
+        jobsRepository.deleteJob(jobId);
     }
 
     /**
@@ -222,7 +222,7 @@ public class JobService {
      */
     @Transactional
     public void releaseJob(final UUID jobId) {
-        jobRepository.releaseJob(jobId);
+        jobsRepository.releaseJob(jobId);
     }
 
     /**
@@ -239,7 +239,7 @@ public class JobService {
      * @param retryAttemptsRemaining the updated number of retry attempts remaining
      */
     public void updateNextTaskRetryDetails(final UUID jobId, final ZonedDateTime startTime, final Integer retryAttemptsRemaining) {
-        jobRepository.updateNextTaskRetryDetails(startTime, retryAttemptsRemaining, jobId);
+        jobsRepository.updateNextTaskRetryDetails(startTime, retryAttemptsRemaining, jobId);
     }
 }
 

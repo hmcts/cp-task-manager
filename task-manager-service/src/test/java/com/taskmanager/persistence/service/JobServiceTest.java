@@ -2,7 +2,7 @@ package com.taskmanager.persistence.service;
 
 import com.taskmanager.domain.converter.JsonObjectConverter;
 import com.taskmanager.persistence.entity.Job;
-import com.taskmanager.persistence.repository.JobRepository;
+import com.taskmanager.persistence.repository.JobsRepository;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +25,7 @@ import static org.mockito.Mockito.*;
 class JobServiceTest {
 
     @Mock
-    private JobRepository jobRepository;
+    private JobsRepository jobsRepository;
 
     @Mock
     private JsonObjectConverter jsonObjectConverter;
@@ -53,7 +53,7 @@ class JobServiceTest {
     @Test
     void testGetUnassignedJobs() {
         List<Job> expectedJobs = Arrays.asList(testJob);
-        when(jobRepository.findUnassignedJobs(any(ZonedDateTime.class)))
+        when(jobsRepository.findUnassignedJobs(any(ZonedDateTime.class)))
                 .thenReturn(expectedJobs);
 
         List<Job> result = jobService.getUnassignedJobs();
@@ -61,75 +61,75 @@ class JobServiceTest {
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(testJob, result.get(0));
-        verify(jobRepository).findUnassignedJobs(any(ZonedDateTime.class));
+        verify(jobsRepository).findUnassignedJobs(any(ZonedDateTime.class));
     }
 
     @Test
     void testGetUnassignedJobsWithBatchSize() {
         int batchSize = 10;
         List<Job> expectedJobs = Arrays.asList(testJob);
-        when(jobRepository.findUnassignedJobsWithLimit(any(ZonedDateTime.class), any(Pageable.class)))
+        when(jobsRepository.findUnassignedJobsWithLimit(any(ZonedDateTime.class), any(Pageable.class)))
                 .thenReturn(expectedJobs);
 
         List<Job> result = jobService.getUnassignedJobs(batchSize);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(jobRepository).findUnassignedJobsWithLimit(any(ZonedDateTime.class), 
+        verify(jobsRepository).findUnassignedJobsWithLimit(any(ZonedDateTime.class),
                 eq(PageRequest.of(0, batchSize)));
     }
 
     @Test
     void testAssignJobToWorker() {
-        when(jobRepository.findByJobId(testJobId)).thenReturn(Optional.of(testJob));
-        when(jobRepository.save(any(Job.class))).thenReturn(testJob);
+        when(jobsRepository.findByJobId(testJobId)).thenReturn(Optional.of(testJob));
+        when(jobsRepository.save(any(Job.class))).thenReturn(testJob);
 
         Job result = jobService.assignJobToWorker(testJobId, testWorkerId);
 
         assertNotNull(result);
-        verify(jobRepository).findByJobId(testJobId);
-        verify(jobRepository).save(any(Job.class));
+        verify(jobsRepository).findByJobId(testJobId);
+        verify(jobsRepository).save(any(Job.class));
         assertEquals(testWorkerId, testJob.getWorkerId());
         assertNotNull(testJob.getWorkerLockTime());
     }
 
     @Test
     void testAssignJobToWorkerJobNotFound() {
-        when(jobRepository.findByJobId(testJobId)).thenReturn(Optional.empty());
+        when(jobsRepository.findByJobId(testJobId)).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, 
                 () -> jobService.assignJobToWorker(testJobId, testWorkerId));
-        verify(jobRepository, never()).save(any(Job.class));
+        verify(jobsRepository, never()).save(any(Job.class));
     }
 
     @Test
     void testDecrementRetryAttempts() {
         testJob.setRetryAttemptsRemaining(5);
-        when(jobRepository.findByJobId(testJobId)).thenReturn(Optional.of(testJob));
-        when(jobRepository.save(any(Job.class))).thenReturn(testJob);
+        when(jobsRepository.findByJobId(testJobId)).thenReturn(Optional.of(testJob));
+        when(jobsRepository.save(any(Job.class))).thenReturn(testJob);
 
         jobService.decrementRetryAttempts(testJobId);
 
-        verify(jobRepository).findByJobId(testJobId);
-        verify(jobRepository).save(testJob);
+        verify(jobsRepository).findByJobId(testJobId);
+        verify(jobsRepository).save(testJob);
         assertEquals(4, testJob.getRetryAttemptsRemaining());
     }
 
     @Test
     void testDecrementRetryAttemptsWhenZero() {
         testJob.setRetryAttemptsRemaining(0);
-        when(jobRepository.findByJobId(testJobId)).thenReturn(Optional.of(testJob));
+        when(jobsRepository.findByJobId(testJobId)).thenReturn(Optional.of(testJob));
 
         jobService.decrementRetryAttempts(testJobId);
 
-        verify(jobRepository).findByJobId(testJobId);
-        verify(jobRepository, never()).save(any(Job.class));
+        verify(jobsRepository).findByJobId(testJobId);
+        verify(jobsRepository, never()).save(any(Job.class));
         assertEquals(0, testJob.getRetryAttemptsRemaining());
     }
 
     @Test
     void testDecrementRetryAttemptsJobNotFound() {
-        when(jobRepository.findByJobId(testJobId)).thenReturn(Optional.empty());
+        when(jobsRepository.findByJobId(testJobId)).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, 
                 () -> jobService.decrementRetryAttempts(testJobId));
@@ -139,7 +139,7 @@ class JobServiceTest {
     void testInsertJob() {
         jobService.insertJob(testJob);
 
-        verify(jobRepository).save(testJob);
+        verify(jobsRepository).save(testJob);
     }
 
     @Test
@@ -150,7 +150,7 @@ class JobServiceTest {
         jobService.updateJobTaskData(testJobId, testJobData);
 
         verify(jsonObjectConverter).convertToDatabaseColumn(testJobData);
-        verify(jobRepository).updateJobData(jsonString, testJobId);
+        verify(jobsRepository).updateJobData(jsonString, testJobId);
     }
 
     @Test
@@ -161,21 +161,21 @@ class JobServiceTest {
 
         jobService.updateNextTaskDetails(testJobId, assignedTaskName, startTime, retryAttempts);
 
-        verify(jobRepository).updateNextTaskDetails(assignedTaskName, startTime, retryAttempts, testJobId);
+        verify(jobsRepository).updateNextTaskDetails(assignedTaskName, startTime, retryAttempts, testJobId);
     }
 
     @Test
     void testDeleteJob() {
         jobService.deleteJob(testJobId);
 
-        verify(jobRepository).deleteJob(testJobId);
+        verify(jobsRepository).deleteJob(testJobId);
     }
 
     @Test
     void testReleaseJob() {
         jobService.releaseJob(testJobId);
 
-        verify(jobRepository).releaseJob(testJobId);
+        verify(jobsRepository).releaseJob(testJobId);
     }
 
     @Test
@@ -185,7 +185,7 @@ class JobServiceTest {
 
         jobService.updateNextTaskRetryDetails(testJobId, startTime, retryAttempts);
 
-        verify(jobRepository).updateNextTaskRetryDetails(startTime, retryAttempts, testJobId);
+        verify(jobsRepository).updateNextTaskRetryDetails(startTime, retryAttempts, testJobId);
     }
 }
 

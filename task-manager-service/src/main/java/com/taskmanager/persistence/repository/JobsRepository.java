@@ -38,7 +38,7 @@ import java.util.UUID;
  * @see com.taskmanager.persistence.service.JobService
  */
 @Repository
-public interface JobRepository extends JpaRepository<Job, UUID> {
+public interface JobsRepository extends JpaRepository<Job, UUID> {
 
     /**
      * Finds all unassigned jobs that are ready to be executed.
