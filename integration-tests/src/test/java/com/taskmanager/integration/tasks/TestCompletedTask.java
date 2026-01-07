@@ -22,7 +22,7 @@ public class TestCompletedTask implements ExecutableTask {
     
     @Override
     public ExecutionInfo execute(ExecutionInfo executionInfo) {
-        logger.info("TestCompletedTask executing for job: {}", executionInfo);
+        logger.info("TestCompletedTask executing for job: {}", executionInfo.getJobData());
         return executionInfo().from(executionInfo)
                 .withExecutionStatus(COMPLETED)
                 .build();
