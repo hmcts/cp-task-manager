@@ -77,7 +77,7 @@ The module includes test task implementations used for integration testing:
 ### Run Specific Test Class
 
 ```bash
-./gradlew :integration-tests:test --tests "com.taskmanager.integration.JobCreationAndExecutionIntegrationTest"
+./gradlew :integration-tests:test --tests "integration.uk.gov.hmcts.cp.taskmanager.JobCreationAndExecutionIntegrationTest"
 ```
 
 ### Run Tests with Verbose Output

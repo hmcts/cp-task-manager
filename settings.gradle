@@ -1,4 +1,4 @@
-rootProject.name = 'spring-job-scheduler'
+rootProject.name = 'spring-task-manager'
 
 include 'task-manager-service'
 include 'example-application'
