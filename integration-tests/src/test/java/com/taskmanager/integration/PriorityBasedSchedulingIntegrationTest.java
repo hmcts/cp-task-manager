@@ -12,6 +12,7 @@ import com.taskmanager.domain.ExecutionInfo;
 import com.taskmanager.domain.ExecutionStatus;
 import com.taskmanager.integration.config.IntegrationTestConfiguration;
 import com.taskmanager.persistence.entity.Job;
+import com.taskmanager.persistence.repository.JobsRepository;
 import com.taskmanager.persistence.service.JobService;
 import com.taskmanager.service.ExecutionService;
 import jakarta.json.Json;
@@ -38,7 +39,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
     private JobService jobService;
 
     @Autowired
-    private com.taskmanager.persistence.repository.JobRepository jobRepository;
+    private JobsRepository jobsRepository;
 
     private JsonObject testJobData;
 
@@ -142,7 +143,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
         // When - Wait for execution
         // Then - High priority job should be executed first
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
-            List<Job> remainingJobs = jobRepository.findAll();
+            List<Job> remainingJobs = jobsRepository.findAll();
             // Both should eventually complete, but high priority should complete first
             assertThat(remainingJobs.size()).isLessThanOrEqualTo(1);
         });

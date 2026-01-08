@@ -10,7 +10,7 @@ import com.taskmanager.domain.ExecutionInfo;
 import com.taskmanager.domain.ExecutionStatus;
 import com.taskmanager.integration.config.IntegrationTestConfiguration;
 import com.taskmanager.persistence.entity.Job;
-import com.taskmanager.persistence.repository.JobRepository;
+import com.taskmanager.persistence.repository.JobsRepository;
 import com.taskmanager.service.ExecutionService;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -33,7 +33,7 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
     private ExecutionService executionService;
 
     @Autowired
-    private JobRepository jobRepository;
+    private JobsRepository jobsRepository;
 
     private JsonObject testJobData;
 
@@ -69,7 +69,7 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for workflow to complete
         // Then - Job should progress through workflow and eventually complete
         await().atMost(java.time.Duration.ofSeconds(15)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            List<Job> jobs = jobsRepository.findAll();
 
             // Workflow should eventually complete (job deleted)
             // Or if still in progress, should be on second task
@@ -100,7 +100,7 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for first task to execute
         // Then - Job should transition to second task
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            List<Job> jobs = jobsRepository.findAll();
             if (!jobs.isEmpty()) {
                 Job job = jobs.get(0);
                 // Should have transitioned to TEST_WORKFLOW_TASK_2
@@ -124,8 +124,28 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for complete workflow execution
         // Then - Job should be deleted after completion
         await().atMost(java.time.Duration.ofSeconds(20)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            List<Job> jobs = jobsRepository.findAll();
             assertThat(jobs).isEmpty(); // Workflow completed, job deleted
+        });
+    }
+
+    @Test
+    void testSpawnMultipleTasksInTheWorkflow() {
+        // Given - Create a task that internally spawns/schedules multiple jobs
+        ExecutionInfo executionInfo = new ExecutionInfo(
+                testJobData,
+                "TEST_SCHEDULE_MULTI_JOBS_TASK",
+                now().minusSeconds(1),
+                ExecutionStatus.STARTED,
+                false
+        );
+        executionService.executeWith(executionInfo);
+
+        // When - Wait for all jobs execution
+        // Then - all the jobs should be deleted after completion
+        await().atMost(java.time.Duration.ofSeconds(20)).untilAsserted(() -> {
+            List<Job> jobs = jobsRepository.findAll();
+            assertThat(jobs).isEmpty();
         });
     }
 }

@@ -9,7 +9,7 @@ import com.taskmanager.domain.ExecutionStatus;
 import com.taskmanager.domain.converter.JsonObjectConverter;
 import com.taskmanager.integration.config.IntegrationTestConfiguration;
 import com.taskmanager.persistence.entity.Job;
-import com.taskmanager.persistence.repository.JobRepository;
+import com.taskmanager.persistence.repository.JobsRepository;
 import com.taskmanager.persistence.service.JobService;
 import com.taskmanager.service.ExecutionService;
 import jakarta.json.Json;
@@ -38,7 +38,7 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
     private JobService jobService;
 
     @Autowired
-    private JobRepository jobRepository;
+    private JobsRepository jobsRepository;
 
     @Autowired
     private JsonObjectConverter jsonObjectConverter;
@@ -105,7 +105,7 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
         // Wait for job to be assigned and executed
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
             // Job should be deleted after completion
-            var jobs = jobRepository.findAll();
+            var jobs = jobsRepository.findAll();
             assertThat(jobs).isEmpty();
         });
     }
@@ -130,7 +130,7 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
 
         // Wait for start time to pass and job to execute
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
-            var jobs = jobRepository.findAll();
+            var jobs = jobsRepository.findAll();
             assertThat(jobs).isEmpty(); // Job should be completed and deleted
         });
     }

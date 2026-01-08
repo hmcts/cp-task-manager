@@ -15,7 +15,7 @@ import com.taskmanager.domain.ExecutionInfo;
 import com.taskmanager.domain.ExecutionStatus;
 import com.taskmanager.integration.config.IntegrationTestConfiguration;
 import com.taskmanager.persistence.entity.Job;
-import com.taskmanager.persistence.repository.JobRepository;
+import com.taskmanager.persistence.repository.JobsRepository;
 import com.taskmanager.service.ExecutionService;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -38,7 +38,7 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
     private ExecutionService executionService;
 
     @Autowired
-    private JobRepository jobRepository;
+    private JobsRepository jobsRepository;
 
     private JsonObject testJobData;
 
@@ -85,7 +85,7 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for all jobs to execute
         // Then - All jobs should be executed and deleted
         await().atMost(java.time.Duration.ofSeconds(15)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            List<Job> jobs = jobsRepository.findAll();
             assertThat(jobs).isEmpty(); // All jobs should be completed
         });
     }
@@ -104,7 +104,7 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
 
         // When - Wait for job to be assigned
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            List<Job> jobs = jobsRepository.findAll();
             if (!jobs.isEmpty()) {
                 final Job job = jobs.get(0);
                 // Job should be locked (have workerId) or completed
@@ -133,7 +133,7 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for all jobs to be processed
         // Then - All jobs should eventually be executed
         await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            List<Job> jobs = jobsRepository.findAll();
             assertThat(jobs).isEmpty(); // All jobs should be completed
         });
     }
@@ -169,7 +169,7 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
 
         // Then - All jobs should be created and eventually executed
         await().atMost(java.time.Duration.ofSeconds(20)).untilAsserted(() -> {
-            List<Job> jobs = jobRepository.findAll();
+            List<Job> jobs = jobsRepository.findAll();
             assertThat(jobs).isEmpty(); // All jobs should be completed
         });
     }

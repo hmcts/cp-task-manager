@@ -1,8 +1,6 @@
 package com.taskmanager.service.task;
 
 
-import com.taskmanager.service.task.ExecutableTask;
-import com.taskmanager.service.task.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +13,8 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
@@ -69,18 +69,21 @@ public class TaskRegistry {
      */
     @Autowired
     private ObjectProvider<ExecutableTask> taskBeanProxy;
-    
+
     /**
      * Automatically discovers and registers all tasks annotated with {@link Task}.
-     * 
-     * <p>This method is called after dependency injection completes (via {@link PostConstruct}).
-     * It iterates through all {@link ExecutableTask} beans provided by Spring, extracts
-     * the task name from the {@link Task} annotation, and registers them in the registry.
-     * 
-     * <p>Tasks without the {@link Task} annotation are skipped. If multiple tasks have
-     * the same name, only the first one is registered (using {@link Map#putIfAbsent}).
+     * * <p>This method is triggered by the {@link ContextRefreshedEvent}, ensuring that all
+     * beans in the application context are fully initialized before registration begins.
+     * This prevents circular dependency issues (specifically {@code BeanCurrentlyInCreationException})
+     * that can occur if a task bean depends on services that in turn depend on this registry.
+     * * <p>It iterates through all {@link ExecutableTask} beans provided by Spring's
+     * {@link ObjectProvider}, extracts the task name from the {@link Task} annotation,
+     * and stores the bean proxy in the internal registry.
+     * * <p>Tasks without the {@link Task} annotation are skipped. If multiple tasks have
+     * the same name, only the first one discovered is registered (using {@link Map#putIfAbsent}).
+     * * @see ContextRefreshedEvent
      */
-    @PostConstruct
+    @EventListener(ContextRefreshedEvent.class)
     public void autoRegisterTasks() {
         logger.info("Auto-discovering and registering tasks...");
         for (final ExecutableTask taskProxy : taskBeanProxy) {
