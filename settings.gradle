@@ -2,5 +2,5 @@ rootProject.name = 'spring-task-manager'
 
 include 'task-manager-service'
 include 'example-application'
-include 'jobstore-liquibase'
+include 'jobstore-flyway'
 include 'integration-tests'

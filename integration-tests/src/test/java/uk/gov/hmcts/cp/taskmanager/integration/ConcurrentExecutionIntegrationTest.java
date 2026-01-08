@@ -61,7 +61,7 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
 
     @Test
     void testLiquibaseRan() {
-        final Integer count = jdbcTemplate.queryForObject("select count(*) from DATABASECHANGELOG", Integer.class);
+        final Integer count = jdbcTemplate.queryForObject("select count(*) from flyway_schema_history", Integer.class);
         assertThat(count).isGreaterThan(0);
     }
 
