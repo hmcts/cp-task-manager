@@ -11,6 +11,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 public abstract class PostgresIntegrationTestBase {
 
+    public static final String ID_KEY = "id";
+
     @Container
     static PostgreSQLContainer<?> postgres =
             new PostgreSQLContainer<>("postgres:16-alpine")
@@ -30,8 +32,10 @@ public abstract class PostgresIntegrationTestBase {
         registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "none");
 
-        // Liquibase MUST run
-        registry.add("spring.liquibase.enabled", () -> "true");
+        // Enable Flyway for tests
+        registry.add("spring.flyway.enabled", () -> "true");
+        // Point Flyway to test migrations only
+        registry.add("spring.flyway.locations", () -> "classpath:db/migration");
 
         // Always use UTC
         registry.add("spring.jpa.properties.hibernate.jdbc.time_zone", () -> "UTC");

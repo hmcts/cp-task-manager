@@ -11,8 +11,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  */
 @SpringBootApplication(scanBasePackages = "uk.gov.hmcts.cp.taskmanager")
 @EnableScheduling
-@EnableJpaRepositories(basePackages = "uk.gov.hmcts.cp.taskmanager.persistence.repository")
-@EntityScan(basePackages = "uk.gov.hmcts.cp.taskmanager.persistence.entity")
+@EnableJpaRepositories(basePackages = {"uk.gov.hmcts.cp.taskmanager.persistence.repository", "uk.gov.hmcts.cp.taskmanager.integration.persistence"})
+@EntityScan(basePackages = {"uk.gov.hmcts.cp.taskmanager.persistence.entity", "uk.gov.hmcts.cp.taskmanager.integration.persistence"})
 public class IntegrationTestApplication {
 }
 

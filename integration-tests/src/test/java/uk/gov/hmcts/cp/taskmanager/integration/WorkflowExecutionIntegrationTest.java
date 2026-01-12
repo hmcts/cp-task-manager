@@ -1,21 +1,26 @@
 package uk.gov.hmcts.cp.taskmanager.integration;
 
+import static jakarta.json.Json.createObjectBuilder;
 import static java.time.ZonedDateTime.now;
+import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-
-import java.util.List;
+import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.COMPLETED;
 
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
 import uk.gov.hmcts.cp.taskmanager.integration.config.IntegrationTestConfiguration;
+import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatus;
+import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatusRepository;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.repository.JobsRepository;
 import uk.gov.hmcts.cp.taskmanager.service.ExecutionService;
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -35,17 +40,11 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
     @Autowired
     private JobsRepository jobsRepository;
 
-    private JsonObject testJobData;
-
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @BeforeEach
-    void setUp() {
-        testJobData = Json.createObjectBuilder()
-                .add("workflow", "test")
-                .build();
-    }
+    @Autowired
+    private TaskStatusRepository taskStatusRepository;
 
     @AfterEach
     void tearDown() {
@@ -57,8 +56,12 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
     @Test
     void testWorkflowExecution() {
         // Given - Create a workflow job starting with TEST_WORKFLOW_TASK_1
-        ExecutionInfo executionInfo = new ExecutionInfo(
-                testJobData,
+        final UUID taskId = randomUUID();
+        final ExecutionInfo executionInfo = new ExecutionInfo(
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
                 "TEST_WORKFLOW_TASK_1",
                 now().minusSeconds(1),
                 ExecutionStatus.STARTED,
@@ -69,27 +72,37 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for workflow to complete
         // Then - Job should progress through workflow and eventually complete
         await().atMost(java.time.Duration.ofSeconds(15)).untilAsserted(() -> {
-            List<Job> jobs = jobsRepository.findAll();
+            final List<Job> jobs = jobsRepository.findAll();
 
             // Workflow should eventually complete (job deleted)
             // Or if still in progress, should be on second task
             if (!jobs.isEmpty()) {
-                Job job = jobs.get(0);
+                final Job job = jobs.get(0);
+                assertThat(job.getWorkerId()).isNotNull();
                 // Should be on TEST_WORKFLOW_TASK_2 or completed
-                assertThat(job.getAssignedTaskName())
-                        .isIn("TEST_WORKFLOW_TASK_1", "TEST_WORKFLOW_TASK_2");
+                assertThat(job.getAssignedTaskName()).isIn("TEST_WORKFLOW_TASK_1", "TEST_WORKFLOW_TASK_2");
             } else {
                 // Workflow completed successfully
                 assertThat(jobs).isEmpty();
             }
+        });
+
+        await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
+            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            assertThat(task.isEmpty()).isFalse();
+            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
         });
     }
 
     @Test
     void testWorkflowTaskTransition() {
         // Given - Create a workflow job
-        ExecutionInfo executionInfo = new ExecutionInfo(
-                testJobData,
+        final UUID taskId = randomUUID();
+        final ExecutionInfo executionInfo = new ExecutionInfo(
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
                 "TEST_WORKFLOW_TASK_1",
                 now().minusSeconds(1),
                 ExecutionStatus.STARTED,
@@ -102,18 +115,29 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
             List<Job> jobs = jobsRepository.findAll();
             if (!jobs.isEmpty()) {
-                Job job = jobs.get(0);
+                final Job job = jobs.get(0);
+                assertThat(job.getWorkerId()).isNotNull();
                 // Should have transitioned to TEST_WORKFLOW_TASK_2
                 assertThat(job.getAssignedTaskName()).isEqualTo("TEST_WORKFLOW_TASK_2");
             }
+        });
+
+        await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
+            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            assertThat(task.isEmpty()).isFalse();
+            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
         });
     }
 
     @Test
     void testWorkflowCompletion() {
         // Given - Create a workflow job
-        ExecutionInfo executionInfo = new ExecutionInfo(
-                testJobData,
+        final UUID taskId = randomUUID();
+        final ExecutionInfo executionInfo = new ExecutionInfo(
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
                 "TEST_WORKFLOW_TASK_1",
                 now().minusSeconds(1),
                 ExecutionStatus.STARTED,
@@ -127,13 +151,23 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
             List<Job> jobs = jobsRepository.findAll();
             assertThat(jobs).isEmpty(); // Workflow completed, job deleted
         });
+
+        await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
+            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            assertThat(task.isEmpty()).isFalse();
+            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+        });
     }
 
     @Test
     void testSpawnMultipleTasksInTheWorkflow() {
         // Given - Create a task that internally spawns/schedules multiple jobs
+        final UUID taskId = randomUUID();
         ExecutionInfo executionInfo = new ExecutionInfo(
-                testJobData,
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
                 "TEST_SCHEDULE_MULTI_JOBS_TASK",
                 now().minusSeconds(1),
                 ExecutionStatus.STARTED,
@@ -144,8 +178,14 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for all jobs execution
         // Then - all the jobs should be deleted after completion
         await().atMost(java.time.Duration.ofSeconds(20)).untilAsserted(() -> {
-            List<Job> jobs = jobsRepository.findAll();
+            final List<Job> jobs = jobsRepository.findAll();
             assertThat(jobs).isEmpty();
+        });
+
+        await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
+            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            assertThat(task.isEmpty()).isFalse();
+            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
         });
     }
 }

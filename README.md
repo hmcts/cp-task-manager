@@ -5,7 +5,7 @@ A Spring Boot-based distributed job scheduling and execution system that provide
 ## Features
 
 - **REST API** to create workflow and one-off jobs
-- **PostgreSQL database** persistence with Liquibase schema management
+- **PostgreSQL database** persistence with Flyway schema management
 - **Automatic job executor** that polls every 5 seconds (configurable) for unassigned jobs
 - **Worker thread pool** for concurrent job execution (configurable pool size)
 - **Priority-based scheduling** (1-10, where 1 is highest priority)
@@ -20,7 +20,7 @@ This is a multi-module Gradle project:
 
 - **`task-manager-service`**: Core job scheduling and execution framework
 - **`example-application`**: Example Spring Boot application demonstrating usage
-- **`jobstore-liquibase`**: Database schema management via Liquibase changesets
+- **`jobstore-flyway`**: Database schema management via Flyway
 
 ## Prerequisites
 
@@ -68,35 +68,35 @@ spring.datasource.username=postgres
 spring.datasource.password=postgres
 ```
 
-### Running Liquibase Migrations Manually
+### Running Flyway Migrations Manually
 
-**Note**: Liquibase migrations run automatically when the Spring Boot application starts. However, if you need to run migrations manually (e.g., for database setup before starting the application), you can use the provided script:
+**Note**: Flyway migrations run automatically when the Spring Boot application starts. However, if you need to run migrations manually (e.g., for database setup before starting the application), you can use the provided script:
 
-1. **Using the provided script** (requires Liquibase CLI):
+1. **Using the provided script** (requires Flyway CLI):
 ```bash
 # Make the script executable (if not already)
-chmod +x run-liquibase.sh
+chmod +x run-flyway.sh
 
 # Run the script
-./run-liquibase.sh
+./run-flyway.sh
 ```
 
 The script will:
 - Connect to the PostgreSQL database using credentials from `application.properties`
-- Run all pending Liquibase migrations
+- Run all pending Flyway migrations
 - Display the migration status
 
-2. **Installing Liquibase CLI** (if not already installed):
-   - **macOS**: `brew install liquibase`
-   - **Linux/Windows**: Download from [https://www.liquibase.org/download](https://www.liquibase.org/download)
+2. **Installing Flyway CLI** (if not already installed):
+   - **macOS**: `brew install flyway`
+   - **Linux/Windows**: curl -L https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/11.14.1/flyway-commandline-11.14.1-linux-x64.tar.gz | tar xz 
 
-3. **Alternative**: If Liquibase CLI is not available, migrations will run automatically when you start the Spring Boot application. Simply start the application and Liquibase will apply any pending migrations.
+3. **Alternative**: If Flyway CLI is not available, migrations will run automatically when you start the Spring Boot application. Simply start the application and Flyway will apply any pending migrations.
 
-**Database Connection Details** (used by `run-liquibase.sh`):
+**Database Connection Details** (used by `run-flyway.sh`):
 - URL: `jdbc:postgresql://localhost:5435/job_scheduler_db`
 - Username: `postgres`
 - Password: `postgres`
-- Changelog: `classpath:liquibase/jobstore-db-changelog.xml`
+- Changelog: `classpath:db/migration`
 
 ## Running the Application
 
@@ -249,9 +249,9 @@ spring.datasource.url=jdbc:postgresql://localhost:5435/job_scheduler_db
 spring.datasource.username=postgres
 spring.datasource.password=postgres
 
-# Liquibase Configuration
-spring.liquibase.enabled=true
-spring.liquibase.change-log=classpath:liquibase/jobstore-db-changelog.xml
+# Flyway Configuration
+spring.flyway.enabled=true
+spring.flyway.locations=classpath:db/migration
 
 # JPA/Hibernate Configuration
 spring.jpa.hibernate.ddl-auto=validate
@@ -259,7 +259,7 @@ spring.jpa.hibernate.ddl-auto=validate
 
 ## Database Schema
 
-The `jobs` table is automatically created via Liquibase with the following structure:
+The `jobs` table is automatically created via Flyway with the following structure:
 
 - `job_id` (UUID, Primary Key) - Auto-generated UUID
 - `worker_id` (UUID) - UUID of the worker assigned to this job (NULL if unassigned)
@@ -272,8 +272,8 @@ The `jobs` table is automatically created via Liquibase with the following struc
 
 ### Schema Management
 
-Database schema is managed via Liquibase changesets in the `jobstore-liquibase` module:
-- `001-initial-schema.xml`: Initial schema creation with all tables and columns
+Database schema is managed via Flyway migrations in the `jobstore-flyway` module:
+- `V1__create_jobs_table.sql`: Initial schema creation with all tables and columns
 
 The schema includes:
 - `jobs` table with all required columns (`assigned_task_name`, `assigned_task_start_time`, etc.)
@@ -282,9 +282,9 @@ The schema includes:
 - Default values for `priority` (10) and `retry_attempts_remaining` (0)
 
 **Note**: 
-- Liquibase migrations run automatically when the Spring Boot application starts. The application will apply any pending migrations on startup.
-- To run migrations manually before starting the application, use the `run-liquibase.sh` script (see [Database Setup](#database-setup) section for details).
-- For manual execution, you can also use the Liquibase CLI directly or restart the application to trigger migrations.
+- Flyway migrations run automatically when the Spring Boot application starts. The application will apply any pending migrations on startup.
+- To run migrations manually before starting the application, use the `run-fl;yway.sh` script (see [Database Setup](#database-setup) section for details).
+- For manual execution, you can also use the Flyway CLI directly or restart the application to trigger migrations.
 
 ## Retry Mechanism
 

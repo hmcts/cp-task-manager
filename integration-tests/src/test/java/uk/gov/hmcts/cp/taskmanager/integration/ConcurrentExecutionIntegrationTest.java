@@ -1,27 +1,32 @@
 package uk.gov.hmcts.cp.taskmanager.integration;
 
 import static java.time.ZonedDateTime.now;
+import static java.util.UUID.randomUUID;
+import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.COMPLETED;
 
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
 import uk.gov.hmcts.cp.taskmanager.integration.config.IntegrationTestConfiguration;
+import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatus;
+import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatusRepository;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.repository.JobsRepository;
 import uk.gov.hmcts.cp.taskmanager.service.ExecutionService;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.json.Json;
-import jakarta.json.JsonObject;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -41,17 +46,11 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
     @Autowired
     private JobsRepository jobsRepository;
 
-    private JsonObject testJobData;
+    @Autowired
+    private TaskStatusRepository taskStatusRepository;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
-
-    @BeforeEach
-    void setUp() {
-        testJobData = Json.createObjectBuilder()
-                .add("test", "data")
-                .build();
-    }
 
     @AfterEach
     void tearDown() {
@@ -71,10 +70,16 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // Given - Create multiple jobs
         final int jobCount = 5;
         final ZonedDateTime startTime = now().minusSeconds(1);
+        final List<UUID> taskIdList = new ArrayList<>();
 
         for (int i = 0; i < jobCount; i++) {
+            final UUID taskId = randomUUID();
+            taskIdList.add(taskId);
             final ExecutionInfo executionInfo = new ExecutionInfo(
-                    testJobData,
+                    Json.createObjectBuilder()
+                            .add("test", "data")
+                            .add(ID_KEY, taskId.toString())
+                            .build(),
                     "TEST_COMPLETED_TASK",
                     startTime,
                     ExecutionStatus.STARTED,
@@ -86,16 +91,26 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // When - Wait for all jobs to execute
         // Then - All jobs should be executed and deleted
         await().atMost(java.time.Duration.ofSeconds(15)).untilAsserted(() -> {
-            List<Job> jobs = jobsRepository.findAll();
+            final List<Job> jobs = jobsRepository.findAll();
             assertThat(jobs).isEmpty(); // All jobs should be completed
+        });
+        // And - All task status updated
+        await().atMost(java.time.Duration.ofSeconds(15)).untilAsserted(() -> {
+            final List<TaskStatus> tasks = taskStatusRepository.findAllById(taskIdList);
+            assertThat(tasks.size()).isEqualTo(jobCount);
+            assertThat(tasks.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
         });
     }
 
     @Test
     void testJobLockingPreventsDuplicateExecution() {
         // Given - Create a single job
+        final UUID taskId = randomUUID();
         final ExecutionInfo executionInfo = new ExecutionInfo(
-                testJobData,
+                Json.createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
                 "TEST_COMPLETED_TASK",
                 now().minusSeconds(1),
                 ExecutionStatus.STARTED,
@@ -112,17 +127,29 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
                 assertThat(job.getWorkerId() != null).isTrue();
             }
         });
+
+        await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
+            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            assertThat(task.isEmpty()).isFalse();
+            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+        });
     }
 
     @Test
     void testBatchProcessing() {
         // Given - Create more jobs than batch size
         int jobCount = 15; // More than default batch size of 10
-        ZonedDateTime startTime = now().minusSeconds(1);
+        final ZonedDateTime startTime = now().minusSeconds(1);
+        final List<UUID> taskIdList = new ArrayList<>();
 
         for (int i = 0; i < jobCount; i++) {
+            final UUID taskId = randomUUID();
+            taskIdList.add(taskId);
             ExecutionInfo executionInfo = new ExecutionInfo(
-                    testJobData,
+                    Json.createObjectBuilder()
+                            .add("test", "data")
+                            .add(ID_KEY, taskId.toString())
+                            .build(),
                     "TEST_COMPLETED_TASK",
                     startTime,
                     ExecutionStatus.STARTED,
@@ -137,6 +164,12 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
             List<Job> jobs = jobsRepository.findAll();
             assertThat(jobs).isEmpty(); // All jobs should be completed
         });
+
+        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+            final List<TaskStatus> tasks = taskStatusRepository.findAllById(taskIdList);
+            assertThat(tasks.size()).isEqualTo(jobCount);
+            assertThat(tasks.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+        });
     }
 
     @Test
@@ -144,15 +177,21 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
         // Given - Create jobs concurrently from multiple threads
         int threadCount = 5;
         int jobsPerThread = 2;
-        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-        CountDownLatch latch = new CountDownLatch(threadCount * jobsPerThread);
+        final ExecutorService executor = newFixedThreadPool(threadCount);
+        final CountDownLatch latch = new CountDownLatch(threadCount * jobsPerThread);
+        final List<UUID> taskIdList = new ArrayList<>();
 
         // When - Create jobs concurrently
         for (int i = 0; i < threadCount; i++) {
             executor.submit(() -> {
                 for (int j = 0; j < jobsPerThread; j++) {
+                    final UUID taskId = randomUUID();
+                    taskIdList.add(taskId);
                     ExecutionInfo executionInfo = new ExecutionInfo(
-                            testJobData,
+                            Json.createObjectBuilder()
+                                    .add("test", "data")
+                                    .add(ID_KEY, taskId.toString())
+                                    .build(),
                             "TEST_COMPLETED_TASK",
                             now().minusSeconds(1),
                             ExecutionStatus.STARTED,
@@ -172,6 +211,12 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
         await().atMost(java.time.Duration.ofSeconds(20)).untilAsserted(() -> {
             List<Job> jobs = jobsRepository.findAll();
             assertThat(jobs).isEmpty(); // All jobs should be completed
+        });
+
+        await().atMost(java.time.Duration.ofSeconds(20)).untilAsserted(() -> {
+            final List<TaskStatus> tasks = taskStatusRepository.findAllById(taskIdList);
+            assertThat(tasks.size()).isEqualTo(threadCount * jobsPerThread);
+            assertThat(tasks.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
         });
     }
 }
