@@ -4,6 +4,13 @@ import static java.time.ZonedDateTime.now;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
+import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
+import uk.gov.hmcts.cp.taskmanager.integration.config.IntegrationTestConfiguration;
+import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
+import uk.gov.hmcts.cp.taskmanager.persistence.repository.JobsRepository;
+import uk.gov.hmcts.cp.taskmanager.service.ExecutionService;
+
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -11,12 +18,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
-import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
-import uk.gov.hmcts.cp.taskmanager.integration.config.IntegrationTestConfiguration;
-import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
-import uk.gov.hmcts.cp.taskmanager.persistence.repository.JobsRepository;
-import uk.gov.hmcts.cp.taskmanager.service.ExecutionService;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import org.junit.jupiter.api.AfterEach;
@@ -60,8 +61,8 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
     }
 
     @Test
-    void testLiquibaseRan() {
-        final Integer count = jdbcTemplate.queryForObject("select count(*) from DATABASECHANGELOG", Integer.class);
+    void testFlywayRan() {
+        final Integer count = jdbcTemplate.queryForObject("select count(*) from flyway_schema_history", Integer.class);
         assertThat(count).isGreaterThan(0);
     }
 
