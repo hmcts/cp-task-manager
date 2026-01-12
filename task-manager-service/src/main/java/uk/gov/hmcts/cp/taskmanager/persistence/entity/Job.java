@@ -100,7 +100,7 @@ public class Job {
      * Task-specific data payload stored as JSON.
      * Converted to/from database using {@link JsonObjectConverter}.
      */
-    @Column(name = "job_data", columnDefinition = "JSONB")
+    @Column(name = "job_data", columnDefinition = "TEXT")
     @Convert(converter = JsonObjectConverter.class)
     private JsonObject jobData;
 

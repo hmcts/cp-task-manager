@@ -11,12 +11,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class JsonObjectConverterTest {
 
     private JsonObjectConverter converter;
-    private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper();
-        converter = new JsonObjectConverter(objectMapper);
+        converter = new JsonObjectConverter();
     }
 
     @Test
