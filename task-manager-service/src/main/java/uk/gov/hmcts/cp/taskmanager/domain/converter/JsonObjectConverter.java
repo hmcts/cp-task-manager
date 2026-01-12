@@ -6,7 +6,6 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.StringReader;
@@ -52,18 +51,28 @@ import java.io.StringReader;
 public class JsonObjectConverter implements AttributeConverter<JsonObject, String> {
     
     /**
-     * Jackson ObjectMapper for serialization/deserialization of Java objects.
+     * Internal static ObjectMapper instance for serialization/deserialization of Java objects.
+     * 
+     * <p>This library uses its own internal ObjectMapper to ensure consistent and predictable
+     * behavior. The ObjectMapper is thread-safe and shared across all instances of the converter.
+     * 
+     * <p>By using an internal constant ObjectMapper, the library:
+     * <ul>
+     *   <li>Does not depend on external ObjectMapper configuration</li>
+     *   <li>Ensures consistent behavior across all consumers</li>
+     *   <li>Eliminates the need for external Jackson configuration</li>
+     *   <li>Provides predictable serialization/deserialization behavior</li>
+     * </ul>
      */
-    private final ObjectMapper objectMapper;
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     
     /**
-     * Constructs a new JsonObjectConverter with the specified ObjectMapper.
+     * Default constructor for Spring component instantiation.
      * 
-     * @param objectMapper the Jackson ObjectMapper for object conversion, must not be null
+     * <p>No external dependencies required - uses internal static ObjectMapper.
      */
-    @Autowired
-    public JsonObjectConverter(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public JsonObjectConverter() {
+        // No-op: ObjectMapper is static and shared
     }
     
     /**
@@ -150,7 +159,7 @@ public class JsonObjectConverter implements AttributeConverter<JsonObject, Strin
             String jsonString = jsonObject.toString();
             
             // Use Jackson ObjectMapper to deserialize to target class
-            return objectMapper.readValue(jsonString, targetClass);
+            return OBJECT_MAPPER.readValue(jsonString, targetClass);
         } catch (Exception e) {
             throw new RuntimeException("Failed to convert JsonObject to " + targetClass.getSimpleName() + ": " + e.getMessage(), e);
         }
@@ -173,7 +182,7 @@ public class JsonObjectConverter implements AttributeConverter<JsonObject, Strin
         
         try {
             // Use Jackson ObjectMapper to serialize object to JSON string
-            String jsonString = objectMapper.writeValueAsString(object);
+            String jsonString = OBJECT_MAPPER.writeValueAsString(object);
             
             // Parse JSON string to JsonObject using Glassfish implementation
             try (JsonReader reader = Json.createReader(new StringReader(jsonString))) {
