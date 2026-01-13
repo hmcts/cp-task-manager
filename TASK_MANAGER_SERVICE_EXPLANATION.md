@@ -538,7 +538,7 @@ The system uses PostgreSQL with:
   - `assigned_task_name`: Name of the task to execute (TEXT)
   - `assigned_task_start_time`: Scheduled start time (TIMESTAMP WITH TIME ZONE)
 - **Indexes**: On `worker_id`, `assigned_task_start_time`, `priority`
-- **Liquibase**: Schema management via changesets
+- **Flyway**: Schema management via migration scripts
 
 ---
 

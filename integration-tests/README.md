@@ -88,7 +88,7 @@ The module includes test task implementations used for integration testing:
 
 ## Test Database
 
-The integration tests use an **H2 in-memory database** configured in `application-test.properties`. The database schema is managed via Liquibase using the same changesets as the main application.
+The integration tests use an **H2 in-memory database** configured in `application-test.properties`. The database schema is managed via Flyway using the same changesets as the main application.
 
 ## Configuration
 
