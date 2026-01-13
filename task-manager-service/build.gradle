@@ -22,9 +22,9 @@ dependencies {
     // Spring Context for @Component, @Autowired, etc.
     api 'org.springframework:spring-context'
 
-    //run flyway migration script on the start
-    api "org.springframework.boot:spring-boot-starter-flyway"
-    
+    //jobstore-flyway
+    api project(":jobstore-flyway")
+
     // Test dependencies
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.mockito:mockito-core'
