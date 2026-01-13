@@ -1,21 +1,28 @@
 package uk.gov.hmcts.cp.taskmanager.integration;
 
+import static jakarta.json.Json.createObjectBuilder;
 import static java.time.ZonedDateTime.now;
+import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.COMPLETED;
 
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
 import uk.gov.hmcts.cp.taskmanager.domain.converter.JsonObjectConverter;
 import uk.gov.hmcts.cp.taskmanager.integration.config.IntegrationTestConfiguration;
+import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatus;
+import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatusRepository;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.repository.JobsRepository;
 import uk.gov.hmcts.cp.taskmanager.persistence.service.JobService;
 import uk.gov.hmcts.cp.taskmanager.service.ExecutionService;
-import jakarta.json.Json;
+
+import java.util.Optional;
+import java.util.UUID;
+
 import jakarta.json.JsonObject;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -43,18 +50,11 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
     @Autowired
     private JsonObjectConverter jsonObjectConverter;
 
-    private JsonObject testJobData;
-
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @BeforeEach
-    void setUp() {
-        testJobData = Json.createObjectBuilder()
-                .add("testKey", "testValue")
-                .add("testNumber", 42)
-                .build();
-    }
+    @Autowired
+    private TaskStatusRepository taskStatusRepository;
 
     @AfterEach
     void tearDown() {
@@ -66,8 +66,12 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
     @Test
     void testJobCreation() {
         // Given
-        ExecutionInfo executionInfo = new ExecutionInfo(
-                testJobData,
+        final UUID taskId = randomUUID();
+        final ExecutionInfo executionInfo = new ExecutionInfo(
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
                 "TEST_COMPLETED_TASK",
                 now(),
                 ExecutionStatus.STARTED,
@@ -88,13 +92,23 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
             assertThat(job.getWorkerId()).isNull();
             assertThat(job.getRetryAttemptsRemaining()).isEqualTo(0);
         });
+
+        await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
+            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            assertThat(task.isEmpty()).isFalse();
+            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+        });
     }
 
     @Test
     void testJobExecutionAndCompletion() {
         // Given - Create a job
-        ExecutionInfo executionInfo = new ExecutionInfo(
-                testJobData,
+        final UUID taskId = randomUUID();
+        final ExecutionInfo executionInfo = new ExecutionInfo(
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
                 "TEST_COMPLETED_TASK",
                 now().minusSeconds(1), // Past time so it can execute immediately
                 ExecutionStatus.STARTED,
@@ -108,13 +122,23 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
             var jobs = jobsRepository.findAll();
             assertThat(jobs).isEmpty();
         });
+
+        await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
+            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            assertThat(task.isEmpty()).isFalse();
+            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+        });
     }
 
     @Test
     void testJobWithFutureStartTime() {
         // Given - Create a job with future start time
-        ExecutionInfo executionInfo = new ExecutionInfo(
-                testJobData,
+        final UUID taskId = randomUUID();
+        final ExecutionInfo executionInfo = new ExecutionInfo(
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
                 "TEST_COMPLETED_TASK",
                 now().plusSeconds(8), // Future time
                 ExecutionStatus.STARTED,
@@ -138,13 +162,15 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
     @Test
     void testJobDataPersistence() {
         // Given
-        JsonObject complexData = Json.createObjectBuilder()
+        final UUID taskId = randomUUID();
+        final JsonObject complexData = createObjectBuilder()
                 .add("name", "Test Job")
+                .add(ID_KEY, taskId.toString())
                 .add("count", 100)
                 .add("active", true)
                 .build();
 
-        ExecutionInfo executionInfo = new ExecutionInfo(
+        final ExecutionInfo executionInfo = new ExecutionInfo(
                 complexData,
                 "TEST_COMPLETED_TASK",
                 now().minusSeconds(1),
@@ -165,6 +191,12 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
                 assertThat(persistedData.getInt("count")).isEqualTo(100);
                 assertThat(persistedData.getBoolean("active")).isTrue();
             }
+        });
+
+        await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
+            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            assertThat(task.isEmpty()).isFalse();
+            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
         });
     }
 }

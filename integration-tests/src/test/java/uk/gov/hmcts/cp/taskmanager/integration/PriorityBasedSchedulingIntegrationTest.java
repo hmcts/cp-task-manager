@@ -1,24 +1,28 @@
 package uk.gov.hmcts.cp.taskmanager.integration;
 
+import static jakarta.json.Json.createObjectBuilder;
 import static java.time.ZonedDateTime.now;
+import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-
-import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.UUID;
+import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.COMPLETED;
 
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
 import uk.gov.hmcts.cp.taskmanager.integration.config.IntegrationTestConfiguration;
+import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatus;
+import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatusRepository;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.repository.JobsRepository;
 import uk.gov.hmcts.cp.taskmanager.persistence.service.JobService;
 import uk.gov.hmcts.cp.taskmanager.service.ExecutionService;
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
+
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -41,17 +45,11 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
     @Autowired
     private JobsRepository jobsRepository;
 
-    private JsonObject testJobData;
-
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @BeforeEach
-    void setUp() {
-        testJobData = Json.createObjectBuilder()
-                .add("test", "data")
-                .build();
-    }
+    @Autowired
+    private TaskStatusRepository taskStatusRepository;
 
     @AfterEach
     void tearDown() {
@@ -63,21 +61,33 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
     @Test
     void testJobsOrderedByPriority() {
         // Given - Create jobs with different priorities
-        ZonedDateTime startTime = now().minusSeconds(1);
+        final ZonedDateTime startTime = now().minusSeconds(1);
 
         // Create job with priority 5 (medium)
+        final UUID taskId1 = randomUUID();
         executionService.executeWith(new ExecutionInfo(
-                testJobData, "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 5
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId1.toString())
+                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 5
         ));
 
         // Create job with priority 1 (highest)
+        final UUID taskId2 = randomUUID();
         executionService.executeWith(new ExecutionInfo(
-                testJobData, "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 1
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId2.toString())
+                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 1
         ));
 
         // Create job with priority 10 (lowest)
+        final UUID taskId3 = randomUUID();
         executionService.executeWith(new ExecutionInfo(
-                testJobData, "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 10
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId3.toString())
+                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 10
         ));
 
         // When - Query unassigned jobs
@@ -92,6 +102,12 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
                 assertThat(jobs.get(2).getPriority()).isEqualTo(10);
             }
         });
+
+        await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
+            final List<TaskStatus> tasks = taskStatusRepository.findAllById(List.of(taskId1, taskId2, taskId3));
+            assertThat(tasks.size()).isEqualTo(3);
+            assertThat(tasks.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+        });
     }
 
     @Test
@@ -100,16 +116,24 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
         ZonedDateTime earlierTime = now().minusSeconds(5);
         ZonedDateTime laterTime = now().minusSeconds(2);
 
-        UUID laterJobId = UUID.randomUUID();
+        UUID laterJobId = randomUUID();
 
         // Create job with earlier start time
+        final UUID taskId1 = randomUUID();
         executionService.executeWith(new ExecutionInfo(
-                testJobData, "TEST_COMPLETED_TASK", earlierTime, ExecutionStatus.STARTED, false, 5
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId1.toString())
+                        .build(), "TEST_COMPLETED_TASK", earlierTime, ExecutionStatus.STARTED, false, 5
         ));
 
         // Create job with later start time
+        final UUID taskId2 = randomUUID();
         executionService.executeWith(new ExecutionInfo(
-                testJobData, "TEST_COMPLETED_TASK", laterTime, ExecutionStatus.STARTED, false, 5
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId2.toString())
+                        .build(), "TEST_COMPLETED_TASK", laterTime, ExecutionStatus.STARTED, false, 5
         ));
 
         // When - Query unassigned jobs
@@ -123,6 +147,12 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
                         .isBeforeOrEqualTo(jobs.get(1).getAssignedTaskStartTime());
             }
         });
+
+        await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
+            final List<TaskStatus> tasks = taskStatusRepository.findAllById(List.of(taskId1, taskId2));
+            assertThat(tasks.size()).isEqualTo(2);
+            assertThat(tasks.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+        });
     }
 
     @Test
@@ -131,13 +161,21 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
         ZonedDateTime startTime = now().minusSeconds(1);
 
         // Create low priority job first
+        final UUID taskId1 = randomUUID();
         executionService.executeWith(new ExecutionInfo(
-                testJobData, "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 10
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId1.toString())
+                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 10
         ));
 
         // Create high priority job second
+        final UUID taskId2 = randomUUID();
         executionService.executeWith(new ExecutionInfo(
-                testJobData, "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 1
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId2.toString())
+                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 1
         ));
 
         // When - Wait for execution
@@ -147,13 +185,24 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
             // Both should eventually complete, but high priority should complete first
             assertThat(remainingJobs.size()).isLessThanOrEqualTo(1);
         });
+
+        await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
+            final List<TaskStatus> tasks = taskStatusRepository.findAllById(List.of(taskId1, taskId2));
+            assertThat(tasks.size()).isEqualTo(2);
+            assertThat(tasks.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+        });
+
     }
 
     @Test
     void testDefaultPriorityIsTen() {
         // Given - Create job without specifying priority
+        final UUID taskId = randomUUID();
         ExecutionInfo executionInfo = new ExecutionInfo(
-                testJobData,
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
                 "TEST_COMPLETED_TASK",
                 now().minusSeconds(1),
                 ExecutionStatus.STARTED,
@@ -171,6 +220,13 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
                 assertThat(jobs.get(0).getPriority()).isEqualTo(10);
             }
         });
+
+        await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
+            final Optional<TaskStatus> taskById = taskStatusRepository.findById(taskId);
+            assertThat(taskById.isEmpty()).isFalse();
+            assertThat(taskById.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+        });
+
     }
 }
 

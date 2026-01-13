@@ -3,5 +3,6 @@ plugins {
 }
 
 dependencies {
-    // No dependencies - this module only contains resources
+    //run flyway migration script on the start
+    api "org.springframework.boot:spring-boot-starter-flyway:4.0.0"
 }

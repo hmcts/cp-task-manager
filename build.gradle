@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'uk.gov.hmcts.cp'
-version = System.getProperty('API_SPEC_VERSION') ?: '1.0.0'
+version = System.getProperty('API_SPEC_VERSION') ?: '1.0.4'
 description = 'Spring Job Scheduler'
 
 def githubActor = project.findProperty("github.actor") ?: System.getenv("GITHUB_ACTOR")
@@ -55,6 +55,8 @@ subprojects {
         // Lombok - using latest version for Java compatibility
         compileOnly 'org.projectlombok:lombok:1.18.42'
         annotationProcessor 'org.projectlombok:lombok:1.18.42'
+        testCompileOnly "org.projectlombok:lombok:1.18.42"
+        testAnnotationProcessor "org.projectlombok:lombok:1.18.42"
         
         // Test
         testImplementation 'org.springframework.boot:spring-boot-starter-test'

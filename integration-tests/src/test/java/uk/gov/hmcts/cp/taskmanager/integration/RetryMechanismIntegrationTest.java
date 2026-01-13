@@ -1,27 +1,32 @@
 package uk.gov.hmcts.cp.taskmanager.integration;
 
+import static jakarta.json.Json.createObjectBuilder;
+import static java.time.ZonedDateTime.now;
+import static java.util.UUID.randomUUID;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.COMPLETED;
+
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
 import uk.gov.hmcts.cp.taskmanager.integration.config.IntegrationTestConfiguration;
+import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatus;
+import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatusRepository;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.repository.JobsRepository;
 import uk.gov.hmcts.cp.taskmanager.persistence.service.JobService;
 import uk.gov.hmcts.cp.taskmanager.service.ExecutionService;
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
+
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
-
-import java.time.ZonedDateTime;
-import java.util.List;
-
-import static java.time.ZonedDateTime.now;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 /**
  * Integration tests for retry mechanism.
@@ -40,17 +45,11 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
     @Autowired
     private JobsRepository jobsRepository;
 
-    private JsonObject testJobData;
-
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @BeforeEach
-    void setUp() {
-        testJobData = Json.createObjectBuilder()
-                .add("test", "data")
-                .build();
-    }
+    @Autowired
+    private TaskStatusRepository taskStatusRepository;
 
     @AfterEach
     void tearDown() {
@@ -62,8 +61,12 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
     @Test
     void testRetryTaskDecrementsAttempts() {
         // Given - Create a job with retry task
+        final UUID taskId = randomUUID();
         ExecutionInfo executionInfo = new ExecutionInfo(
-                testJobData,
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
                 "TEST_RETRY_TASK",
                 now().minusSeconds(1),
                 ExecutionStatus.STARTED,
@@ -76,7 +79,7 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
             List<Job> jobs = jobsRepository.findAll();
             // Job should still exist (not deleted) because it's retrying
             assertThat(jobs).isNotEmpty();
-            
+
             Job job = jobs.get(0);
             // Retry attempts should be decremented (starts with 3, should be 2 after first retry)
             assertThat(job.getRetryAttemptsRemaining()).isLessThan(3);
@@ -86,8 +89,12 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
     @Test
     void testRetryScheduledWithDelay() {
         // Given - Create a job with retry task
+        final UUID taskId = randomUUID();
         ExecutionInfo executionInfo = new ExecutionInfo(
-                testJobData,
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
                 "TEST_RETRY_TASK",
                 now().minusSeconds(1),
                 ExecutionStatus.STARTED,
@@ -106,13 +113,21 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
                 assertThat(job.getAssignedTaskStartTime()).isAfter(initialStartTime);
             }
         });
+
+        final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+        assertThat(task.isEmpty()).isFalse();
+        assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
     }
 
     @Test
     void testRetryExhausted() {
         // Given - Create a job with retry task that will exhaust retries
+        final UUID taskId = randomUUID();
         ExecutionInfo executionInfo = new ExecutionInfo(
-                testJobData,
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
                 "TEST_RETRY_TASK",
                 now().minusSeconds(1),
                 ExecutionStatus.STARTED,
@@ -130,13 +145,21 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
                 assertThat(job.getRetryAttemptsRemaining()).isEqualTo(0);
             }
         });
+
+        final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+        assertThat(task.isEmpty()).isFalse();
+        assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
     }
 
     @Test
     void testRetryTaskWithNoRetryConfiguration() {
         // Given - Create a job with a task that doesn't have retry configuration
+        final UUID taskId = randomUUID();
         ExecutionInfo executionInfo = new ExecutionInfo(
-                testJobData,
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
                 "TEST_COMPLETED_TASK", // This task doesn't have retry configuration
                 now().minusSeconds(1),
                 ExecutionStatus.STARTED,
@@ -150,6 +173,10 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
             List<Job> jobs = jobsRepository.findAll();
             assertThat(jobs).isEmpty(); // Job should be completed and deleted
         });
+
+        final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+        assertThat(task.isEmpty()).isFalse();
+        assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
     }
 }
 

@@ -6,7 +6,7 @@ dependencies {
     // Depend on task-manager-service
     implementation project(':task-manager-service')
     
-    // Depend on jobstore-liquibase for database schema
+    // Depend on jobstore-flyway for database schema
     implementation project(':jobstore-flyway')
     
     // Spring Boot Web
@@ -17,8 +17,6 @@ dependencies {
     runtimeOnly "org.flywaydb:flyway-database-postgresql"
     
     // Flyway for Database Migration
-    implementation 'org.springframework.boot:spring-boot-starter-flyway'
-    implementation 'org.liquibase:liquibase-core'
     implementation "org.flywaydb:flyway-core"
 
     // Spring Boot Flyway starter for auto-configuration
