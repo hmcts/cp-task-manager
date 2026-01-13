@@ -70,7 +70,14 @@ spring.datasource.password=postgres
 
 ### Running Flyway Migrations Manually
 
-**Note**: Flyway migrations run automatically when the Spring Boot application starts. However, if you need to run migrations manually (e.g., for database setup before starting the application), you can use the provided script:
+**Note**: Flyway migrations run automatically when the Spring Boot application starts.
+Client applications must include below dependencies in their project
+```gradle
+  implementation "uk.gov.hmcts.cp:task-manager-service:1.0.4"
+  implementation "uk.gov.hmcts.cp:jobstore-flyway:1.0.4"
+```
+
+However, if you need to run migrations manually (e.g., for database setup before starting the application), you can use the provided script:
 
 1. **Using the provided script** (requires Flyway CLI):
 ```bash
