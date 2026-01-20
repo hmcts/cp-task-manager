@@ -15,10 +15,8 @@ import  java.util.List;
 
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
 
 /**
  * Central registry for managing and retrieving executable tasks.
@@ -52,7 +50,6 @@ import org.springframework.stereotype.Component;
  * @see Task
  * @see TaskFoundEvent
  */
-@Component
 public class TaskRegistry {
 
     /**
@@ -70,8 +67,11 @@ public class TaskRegistry {
      * Spring ObjectProvider for accessing all ExecutableTask beans.
      * Used for automatic task discovery.
      */
-    @Autowired
     private ObjectProvider<ExecutableTask> taskBeanProxy;
+
+    public TaskRegistry(ObjectProvider<ExecutableTask> taskBeanProxy){
+        this.taskBeanProxy = taskBeanProxy;
+    }
 
     /**
      * Automatically discovers and registers all tasks annotated with {@link Task}.

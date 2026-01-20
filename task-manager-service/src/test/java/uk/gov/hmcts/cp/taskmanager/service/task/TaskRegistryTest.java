@@ -2,10 +2,12 @@ package uk.gov.hmcts.cp.taskmanager.service.task;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 class TaskRegistryTest {
 
@@ -13,7 +15,8 @@ class TaskRegistryTest {
 
     @BeforeEach
     void setUp() {
-        taskRegistry = new TaskRegistry();
+        final ObjectProvider<ExecutableTask> taskProvider = mock(ObjectProvider.class);
+        taskRegistry = new TaskRegistry(taskProvider);
     }
 
     @Test

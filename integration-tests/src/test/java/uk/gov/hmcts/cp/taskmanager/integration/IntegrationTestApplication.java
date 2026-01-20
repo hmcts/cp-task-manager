@@ -9,10 +9,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * Spring Boot application for integration tests.
  * Enables scheduling for JobExecutor and component scanning.
  */
-@SpringBootApplication(scanBasePackages = "uk.gov.hmcts.cp.taskmanager")
+@SpringBootApplication(scanBasePackages = "uk.gov.hmcts.cp.taskmanager.integration")
 @EnableScheduling
-@EnableJpaRepositories(basePackages = {"uk.gov.hmcts.cp.taskmanager.persistence.repository", "uk.gov.hmcts.cp.taskmanager.integration.persistence"})
-@EntityScan(basePackages = {"uk.gov.hmcts.cp.taskmanager.persistence.entity", "uk.gov.hmcts.cp.taskmanager.integration.persistence"})
+@EnableJpaRepositories(basePackages = {"uk.gov.hmcts.cp.taskmanager.integration.persistence"})
+@EntityScan(basePackages = {"uk.gov.hmcts.cp.taskmanager.integration.persistence"})
 public class IntegrationTestApplication {
 }
 
