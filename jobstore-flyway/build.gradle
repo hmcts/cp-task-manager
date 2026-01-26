@@ -4,5 +4,5 @@ plugins {
 
 dependencies {
     //run flyway migration script on the start
-    api "org.springframework.boot:spring-boot-starter-flyway:4.0.0"
+    api "org.springframework.boot:spring-boot-starter-flyway:4.0.2"
 }
