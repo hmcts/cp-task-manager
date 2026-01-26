@@ -7,11 +7,9 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.List;
@@ -68,7 +66,6 @@ import java.util.UUID;
  * @see JobService
  * @see TaskRegistry
  */
-@Component
 public class JobExecutor {
 
     /**
@@ -159,7 +156,6 @@ public class JobExecutor {
      * @param taskRegistry the task registry for task lookup, must not be null
      * @param transactionManager the transaction manager, must not be null
      */
-    @Autowired
     public JobExecutor(JobService jobService, TaskRegistry taskRegistry, PlatformTransactionManager transactionManager) {
         this.jobService = jobService;
         this.taskRegistry = taskRegistry;

@@ -5,7 +5,7 @@ import org.springframework.boot.flyway.autoconfigure.FlywayConfigurationCustomiz
 import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
-public class TaskManagerAutoConfiguration {
+public class JobstoreAutoConfiguration {
 
     @Bean
     public FlywayConfigurationCustomizer jobstoreFlywayCustomizer() {

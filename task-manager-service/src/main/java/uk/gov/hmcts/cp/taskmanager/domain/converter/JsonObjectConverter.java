@@ -6,7 +6,6 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
-import org.springframework.stereotype.Component;
 
 import java.io.StringReader;
 
@@ -47,7 +46,6 @@ import java.io.StringReader;
  * @see JsonObject
  */
 @Converter
-@Component
 public class JsonObjectConverter implements AttributeConverter<JsonObject, String> {
     
     /**

@@ -1,0 +1,2 @@
+uk.gov.hmcts.cp.taskmanager.autoconfig.TaskManagerAutoConfiguration
+uk.gov.hmcts.cp.taskmanager.autoconfig.TaskManagerEntityPackagesAutoConfiguration
