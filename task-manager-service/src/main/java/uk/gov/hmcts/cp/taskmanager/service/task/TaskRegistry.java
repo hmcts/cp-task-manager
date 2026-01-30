@@ -4,15 +4,13 @@ package uk.gov.hmcts.cp.taskmanager.service.task;
 import uk.gov.hmcts.cp.taskmanager.domain.executor.TaskExecutor;
 import uk.gov.hmcts.cp.taskmanager.service.ExecutionService;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import  java.util.List;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -20,16 +18,16 @@ import org.springframework.context.event.EventListener;
 
 /**
  * Central registry for managing and retrieving executable tasks.
- * 
+ *
  * <p>The TaskRegistry maintains a map of task names to their corresponding
  * {@link ExecutableTask} implementations. It provides automatic discovery and
  * registration of tasks annotated with {@link Task} during application startup.
- * 
+ *
  * <p>Tasks are automatically discovered via Spring's {@link ObjectProvider} which
  * collects all beans implementing {@link ExecutableTask}. The registry extracts
  * the task name from the {@link Task} annotation and stores the task proxy for
  * later retrieval.
- * 
+ *
  * <p>The registry supports:
  * <ul>
  *   <li>Automatic task discovery and registration on startup</li>
@@ -37,18 +35,18 @@ import org.springframework.context.event.EventListener;
  *   <li>Task lookup by name</li>
  *   <li>Retry configuration lookup</li>
  * </ul>
- * 
+ *
  * <p>This registry is used by:
  * <ul>
  *   <li>{@link TaskExecutor} - to retrieve tasks for execution</li>
  *   <li>{@link ExecutionService} - to determine retry configuration</li>
  * </ul>
- * 
+ *
  * @author Task Manager Service
- * @since 1.0.0
  * @see ExecutableTask
  * @see Task
  * @see TaskFoundEvent
+ * @since 1.0.0
  */
 public class TaskRegistry {
 
@@ -69,7 +67,7 @@ public class TaskRegistry {
      */
     private ObjectProvider<ExecutableTask> taskBeanProxy;
 
-    public TaskRegistry(ObjectProvider<ExecutableTask> taskBeanProxy){
+    public TaskRegistry(ObjectProvider<ExecutableTask> taskBeanProxy) {
         this.taskBeanProxy = taskBeanProxy;
     }
 
@@ -93,7 +91,7 @@ public class TaskRegistry {
             // Get the actual class (not the proxy class)
             final Class<?> actualClass = AopUtils.getTargetClass(taskProxy);
             final Task taskAnnotation = actualClass.getAnnotation(Task.class);
-            
+
             if (taskAnnotation != null) {
                 final String taskName = taskAnnotation.value();
                 taskProxyByNameMap.putIfAbsent(taskName, taskProxy);
@@ -107,14 +105,14 @@ public class TaskRegistry {
 
     /**
      * Manually registers a task based on a TaskFoundEvent.
-     * 
+     *
      * <p>This method looks up the task bean corresponding to the class in the event,
      * extracts the task name from the {@link Task} annotation, and registers it.
-     * 
+     *
      * <p>This method is typically used for manual task registration or when tasks
      * are discovered dynamically. If the task is not found in the Spring context,
      * an error is logged.
-     * 
+     *
      * @param event the TaskFoundEvent containing the task class to register
      * @throws NullPointerException if the task class does not have a {@link Task} annotation
      */
@@ -143,7 +141,7 @@ public class TaskRegistry {
 
     /**
      * Retrieves a task by its name.
-     * 
+     *
      * @param taskName the task name (from {@link Task#value()})
      * @return an Optional containing the ExecutableTask if found, empty otherwise
      */
@@ -153,12 +151,12 @@ public class TaskRegistry {
 
     /**
      * Finds the number of retry attempts configured for a task.
-     * 
+     *
      * <p>This method looks up the task and returns the number of retry durations
      * configured. The number of retry attempts equals the size of the retry durations list.
-     * 
+     *
      * <p>If the task is not found or does not have retry configuration, returns 0.
-     * 
+     *
      * @param taskName the task name
      * @return the number of retry attempts configured, or 0 if not found or not configured
      */
@@ -170,10 +168,10 @@ public class TaskRegistry {
 
     /**
      * Finds the number of retry attempts for a specific task instance.
-     * 
+     *
      * <p>This method extracts the retry durations list from the task and returns its size.
      * If the task does not have retry configuration, returns 0.
-     * 
+     *
      * @param task the ExecutableTask instance
      * @return the number of retry attempts (size of retry durations list), or 0 if not configured
      */

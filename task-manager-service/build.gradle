@@ -5,7 +5,8 @@ plugins {
 dependencies {
     // Spring Boot Data JPA
     api 'org.springframework.boot:spring-boot-starter-data-jpa'
-    
+    api "org.springframework.boot:spring-boot-flyway"
+    api 'org.flywaydb:flyway-core'
     // JSON Processing API
     api 'jakarta.json:jakarta.json-api'
     api 'org.glassfish:jakarta.json:2.0.1'
@@ -22,8 +23,6 @@ dependencies {
     // Spring Context for @Component, @Autowired, etc.
     api 'org.springframework:spring-context'
 
-    //jobstore-flyway
-    api project(":jobstore-flyway")
 
     // Test dependencies
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
