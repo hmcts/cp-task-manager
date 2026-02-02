@@ -20,7 +20,7 @@ This is a multi-module Gradle project:
 
 - **`task-manager-service`**: Core job scheduling and execution framework
 - **`example-application`**: Example Spring Boot application demonstrating usage
-- **`jobstore-flyway`**: Database schema management via Flyway
+- **`integration-tests`**: Integration tests
 
 ## Prerequisites
 
@@ -67,36 +67,6 @@ spring.datasource.url=jdbc:postgresql://localhost:5435/job_scheduler_db
 spring.datasource.username=postgres
 spring.datasource.password=postgres
 ```
-
-### Running Flyway Migrations Manually
-
-**Note**: Flyway migrations run automatically when the Spring Boot application starts. However, if you need to run migrations manually (e.g., for database setup before starting the application), you can use the provided script:
-
-1. **Using the provided script** (requires Flyway CLI):
-```bash
-# Make the script executable (if not already)
-chmod +x run-flyway.sh
-
-# Run the script
-./run-flyway.sh
-```
-
-The script will:
-- Connect to the PostgreSQL database using credentials from `application.properties`
-- Run all pending Flyway migrations
-- Display the migration status
-
-2. **Installing Flyway CLI** (if not already installed):
-   - **macOS**: `brew install flyway`
-   - **Linux/Windows**: curl -L https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/11.14.1/flyway-commandline-11.14.1-linux-x64.tar.gz | tar xz 
-
-3. **Alternative**: If Flyway CLI is not available, migrations will run automatically when you start the Spring Boot application. Simply start the application and Flyway will apply any pending migrations.
-
-**Database Connection Details** (used by `run-flyway.sh`):
-- URL: `jdbc:postgresql://localhost:5435/job_scheduler_db`
-- Username: `postgres`
-- Password: `postgres`
-- Changelog: `classpath:db/migration`
 
 ## Running the Application
 
@@ -272,19 +242,16 @@ The `jobs` table is automatically created via Flyway with the following structur
 
 ### Schema Management
 
-Database schema is managed via Flyway migrations in the `jobstore-flyway` module:
+Database schema is managed via Flyway migrations in the `task-manager-service` module:
 - `V1__create_jobs_table.sql`: Initial schema creation with all tables and columns
 
 The schema includes:
 - `jobs` table with all required columns (`assigned_task_name`, `assigned_task_start_time`, etc.)
 - Automatic UUID generation for `job_id`
-- JSONB support for `job_data` (PostgreSQL)
 - Default values for `priority` (10) and `retry_attempts_remaining` (0)
 
 **Note**: 
 - Flyway migrations run automatically when the Spring Boot application starts. The application will apply any pending migrations on startup.
-- To run migrations manually before starting the application, use the `run-fl;yway.sh` script (see [Database Setup](#database-setup) section for details).
-- For manual execution, you can also use the Flyway CLI directly or restart the application to trigger migrations.
 
 ## Retry Mechanism
 
