@@ -76,9 +76,18 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
      *         ordered by priority and start time
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT j FROM Job j WHERE j.workerId IS NULL AND j.assignedTaskStartTime <= :currentTime ORDER BY j.priority ASC, j.assignedTaskStartTime ASC")
+    @Query("SELECT j FROM Job j WHERE j.workerId IS NULL AND j.assignedTaskStartTime <= :currentTime ORDER BY j.priority ASC, j.assignedTaskStartTime ASC ")
     List<Job> findUnassignedJobsWithLimit(@Param("currentTime") ZonedDateTime currentTime, Pageable pageable);
 
+    @Modifying
+    @Query("UPDATE jobs SET worker_id = :workerId, worker_lock_time = :lockTime WHERE job_id IN (SELECT job_id FROM jobs WHERE worker_id IS NULL AND assigned_task_start_time <= :currentTime ORDER BY priority ASC, assigned_task_start_time ASC LIMIT :batchSize FOR UPDATE SKIP LOCKED)")
+    int assignJobsToWorkerBatch(@Param("workerId") UUID workerId,
+                                @Param("lockTime") ZonedDateTime lockTime,
+                                @Param("currentTime") ZonedDateTime currentTime,
+                                @Param("batchSize") int batchSize);
+
+    @Query("SELECT j FROM Job j WHERE j.workerId = :workerId")
+    List<Job> findJobsWithWorkerId(@Param("workerId") UUID workerId);
     /**
      * Finds a job by its unique identifier.
      * 

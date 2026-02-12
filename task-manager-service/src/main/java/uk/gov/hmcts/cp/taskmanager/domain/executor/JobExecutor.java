@@ -1,5 +1,6 @@
 package uk.gov.hmcts.cp.taskmanager.domain.executor;
 
+import org.springframework.transaction.annotation.Transactional;
 import uk.gov.hmcts.cp.taskmanager.service.task.TaskRegistry;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.service.JobService;
@@ -12,6 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -215,27 +217,24 @@ public class JobExecutor {
      * so the job can be retried in the next polling cycle.
      */
     @Scheduled(fixedDelayString = "${job.executor.poll-interval:5000}")
+
     public void checkAndAssignJobs() {
         try {
             logger.debug("Checking for unassigned jobs (batch size: {})...", batchSize);
-            List<Job> unassignedJobs = jobService.getUnassignedJobs(batchSize);
+            UUID workerId = UUID.randomUUID();
+            List<Job> assignedJobs = jobService.assignJobsToWorkerBatch(workerId, ZonedDateTime.now(),ZonedDateTime.now(),batchSize);
 
-            if (unassignedJobs.isEmpty()) {
+            if (assignedJobs.isEmpty()) {
                 logger.debug("No unassigned jobs found");
                 return;
             }
 
-            logger.info("Found {} unassigned job(s)", unassignedJobs.size());
+            logger.info("Found {} assignedJobs job(s)", assignedJobs.size());
 
-            for (Job job : unassignedJobs) {
+            for (Job job : assignedJobs) {
                 try {
-                    // Assign job to a worker
-                    UUID workerId = UUID.randomUUID();
-                    Job assignedJob = jobService.assignJobToWorker(job.getJobId(), workerId);
-                    logger.info("Assigned job {} to worker {}", assignedJob.getJobId(), workerId);
-
                     // Submit job execution to worker thread pool
-                    executor.execute(() -> executeJob(assignedJob));
+                    executor.execute(() -> executeJob(job));
                 } catch (Exception e) {
                     logger.error("Error assigning job {}: {}", job.getJobId(), e.getMessage(), e);
                     // Decrement retry attempts on failure

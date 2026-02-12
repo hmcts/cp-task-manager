@@ -111,6 +111,12 @@ public class JobService {
         return jobsRepository.findUnassignedJobsWithLimit(ZonedDateTime.now(), pageable);
     }
 
+    @Transactional
+    public List<Job> assignJobsToWorkerBatch(UUID workerId,ZonedDateTime lockTime, ZonedDateTime currentTime,int batchSize) {
+         jobsRepository.assignJobsToWorkerBatch(workerId, lockTime,currentTime,batchSize);
+        return jobsRepository.findJobsWithWorkerId(workerId);
+    }
+
     /**
      * Assigns a job to a worker thread.
      * 
