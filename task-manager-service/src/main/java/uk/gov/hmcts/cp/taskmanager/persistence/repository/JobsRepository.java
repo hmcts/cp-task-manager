@@ -19,7 +19,7 @@ import java.util.UUID;
 
 /**
  * Spring Data JPA repository for {@link Job} entities.
- * 
+ *
  * <p>This repository provides data access operations for jobs, including:
  * <ul>
  *   <li>Finding unassigned jobs (for job scheduling)</li>
@@ -27,13 +27,13 @@ import java.util.UUID;
  *   <li>Job assignment and release operations</li>
  *   <li>Job data and task details updates</li>
  * </ul>
- * 
+ *
  * <p>Query methods use pessimistic locking ({@link LockModeType#PESSIMISTIC_WRITE})
  * to prevent concurrent access issues when multiple workers are polling for jobs.
- * 
+ *
  * <p>Jobs are ordered by priority (ascending, 1 is highest) and then by start time
  * (ascending) to ensure high-priority jobs are processed first.
- * 
+ *
  * @author Task Manager Service
  * @since 1.0.0
  * @see Job
@@ -44,16 +44,16 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
 
     /**
      * Finds all unassigned jobs that are ready to be executed.
-     * 
+     *
      * <p>This query uses pessimistic write locking to prevent concurrent access.
      * Jobs are ordered by priority (ascending) and then by start time (ascending).
-     * 
+     *
      * <p>A job is considered unassigned if:
      * <ul>
      *   <li>{@code workerId} is null</li>
      *   <li>{@code assignedTaskStartTime} is less than or equal to the current time</li>
      * </ul>
-     * 
+     *
      * @param currentTime the current time for comparison with job start times
      * @return a list of unassigned jobs ready for execution, ordered by priority and start time
      */
@@ -63,13 +63,13 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
 
     /**
      * Finds unassigned jobs with pagination support.
-     * 
+     *
      * <p>This method is similar to {@link #findUnassignedJobs(ZonedDateTime)} but supports
      * limiting the number of results using {@link Pageable}. This is useful for batch
      * processing to avoid loading too many jobs at once.
-     * 
+     *
      * <p>Uses pessimistic write locking to prevent concurrent access.
-     * 
+     *
      * @param currentTime the current time for comparison with job start times
      * @param pageable pagination information (page number and size)
      * @return a list of unassigned jobs ready for execution, limited by pageable,
@@ -80,17 +80,32 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
     List<Job> findUnassignedJobsWithLimit(@Param("currentTime") ZonedDateTime currentTime, Pageable pageable);
 
     @Modifying
-    @Query("UPDATE jobs SET worker_id = :workerId, worker_lock_time = :lockTime WHERE job_id IN (SELECT job_id FROM jobs WHERE worker_id IS NULL AND assigned_task_start_time <= :currentTime ORDER BY priority ASC, assigned_task_start_time ASC LIMIT :batchSize FOR UPDATE SKIP LOCKED)")
-    int assignJobsToWorkerBatch(@Param("workerId") UUID workerId,
+    @Query(value = """
+                        WITH cte AS (
+                            SELECT job_id
+                            FROM jobs
+                            WHERE worker_id IS NULL
+                              AND assigned_task_start_time <= :currentTime
+                            ORDER BY priority ASC,
+                                     assigned_task_start_time ASC
+                            LIMIT :batchSize
+                            FOR UPDATE SKIP LOCKED
+                        )
+                        UPDATE jobs j
+                        SET worker_id = :workerId,
+                            worker_lock_time = :lockTime
+                        FROM cte
+                        WHERE j.job_id = cte.job_id
+                        RETURNING j.*
+                    """, nativeQuery = true)
+    List<Job> assignJobsToWorkerBatch(@Param("workerId") UUID workerId,
                                 @Param("lockTime") ZonedDateTime lockTime,
                                 @Param("currentTime") ZonedDateTime currentTime,
                                 @Param("batchSize") int batchSize);
 
-    @Query("SELECT j FROM Job j WHERE j.workerId = :workerId")
-    List<Job> findJobsWithWorkerId(@Param("workerId") UUID workerId);
     /**
      * Finds a job by its unique identifier.
-     * 
+     *
      * @param jobId the unique job identifier
      * @return an Optional containing the job if found, empty otherwise
      */
@@ -98,10 +113,10 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
 
     /**
      * Inserts a new job into the database.
-     * 
+     *
      * <p>This method uses a native SQL query to insert a job with all its fields.
      * The job data is converted to JSONB format for PostgreSQL storage.
-     * 
+     *
      * @param jobId the unique job identifier
      * @param workerId the worker identifier (null for unassigned jobs)
      * @param workerLockTime the lock timestamp (null for unassigned jobs)
@@ -122,9 +137,9 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
 
     /**
      * Updates the job data for a specific job.
-     * 
+     *
      * <p>The job data is converted to JSONB format for PostgreSQL storage.
-     * 
+     *
      * @param jobData the new job data as a JSON string
      * @param jobId the unique job identifier
      */
@@ -135,10 +150,10 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
 
     /**
      * Updates the next task details for a job.
-     * 
+     *
      * <p>This method is used when a task completes and the workflow continues
      * with a different task. It updates the task name, start time, and retry attempts.
-     * 
+     *
      * @param assignedTaskName the new task name
      * @param assignedTaskStartTime the new scheduled start time
      * @param retryAttemptsRemaining the new number of retry attempts remaining
@@ -153,10 +168,10 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
 
     /**
      * Updates the retry details for a job (start time and remaining attempts).
-     * 
+     *
      * <p>This method is used when a task fails and needs to be retried.
      * It updates the start time to schedule the retry and decrements the retry attempts.
-     * 
+     *
      * @param assignedTaskStartTime the new scheduled start time for the retry
      * @param retryAttemptsRemaining the updated number of retry attempts remaining
      * @param jobId the unique job identifier
@@ -169,10 +184,10 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
 
     /**
      * Deletes a job from the database.
-     * 
+     *
      * <p>This method is typically called when a job completes successfully
      * and is no longer needed.
-     * 
+     *
      * @param jobId the unique job identifier
      */
     @Modifying
@@ -181,7 +196,7 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
 
     /**
      * Releases a job lock by clearing the worker assignment.
-     * 
+     *
      * <p>This method sets {@code workerId} and {@code workerLockTime} to null,
      * making the job available for reassignment. It is used when:
      * <ul>
@@ -189,7 +204,7 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
      *   <li>A task execution completes and the workflow continues</li>
      *   <li>An error occurs during execution</li>
      * </ul>
-     * 
+     *
      * @param jobId the unique job identifier
      */
     @Modifying

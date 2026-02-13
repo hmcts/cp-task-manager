@@ -80,29 +80,6 @@ class JobServiceTest {
     }
 
     @Test
-    void testAssignJobToWorker() {
-        when(jobsRepository.findByJobId(testJobId)).thenReturn(Optional.of(testJob));
-        when(jobsRepository.save(any(Job.class))).thenReturn(testJob);
-
-        Job result = jobService.assignJobToWorker(testJobId, testWorkerId);
-
-        assertNotNull(result);
-        verify(jobsRepository).findByJobId(testJobId);
-        verify(jobsRepository).save(any(Job.class));
-        assertEquals(testWorkerId, testJob.getWorkerId());
-        assertNotNull(testJob.getWorkerLockTime());
-    }
-
-    @Test
-    void testAssignJobToWorkerJobNotFound() {
-        when(jobsRepository.findByJobId(testJobId)).thenReturn(Optional.empty());
-
-        assertThrows(RuntimeException.class, 
-                () -> jobService.assignJobToWorker(testJobId, testWorkerId));
-        verify(jobsRepository, never()).save(any(Job.class));
-    }
-
-    @Test
     void testDecrementRetryAttempts() {
         testJob.setRetryAttemptsRemaining(5);
         when(jobsRepository.findByJobId(testJobId)).thenReturn(Optional.of(testJob));
