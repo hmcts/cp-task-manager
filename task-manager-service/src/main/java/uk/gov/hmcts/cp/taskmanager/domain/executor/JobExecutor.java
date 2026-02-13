@@ -156,7 +156,7 @@ public class JobExecutor {
         try {
             logger.debug("Checking for unassigned jobs (batch size: {})...", batchSize);
             final UUID workerId = UUID.randomUUID();
-            final List<Job> assignedJobs = jobService.assignJobsToWorkerBatch(workerId, ZonedDateTime.now(), ZonedDateTime.now(), batchSize);
+            final List<Job> assignedJobs = jobService.assignJobsToWorkerBatch(workerId, batchSize);
 
             if (assignedJobs.isEmpty()) {
                 logger.debug("No unassigned jobs found");

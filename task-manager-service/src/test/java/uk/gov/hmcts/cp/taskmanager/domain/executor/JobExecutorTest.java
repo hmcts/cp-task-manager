@@ -82,7 +82,7 @@ class JobExecutorTest {
 
     @Test
     void testCheckAndAssignJobsWithNoJobs() {
-        when(jobService.assignJobsToWorkerBatch(any(UUID.class), any(ZonedDateTime.class), any(ZonedDateTime.class), eq(50))).thenReturn(Collections.emptyList());
+        when(jobService.assignJobsToWorkerBatch(any(UUID.class), eq(50))).thenReturn(Collections.emptyList());
 
         jobExecutor.checkAndAssignJobs();
 
@@ -103,12 +103,12 @@ class JobExecutorTest {
         );
         List<Job> jobs = Arrays.asList(testJob, job2);
 
-        when(jobService.assignJobsToWorkerBatch(any(UUID.class), any(ZonedDateTime.class), any(ZonedDateTime.class), eq(50)))
+        when(jobService.assignJobsToWorkerBatch(any(UUID.class), eq(50)))
                 .thenReturn(jobs);
 
         jobExecutor.checkAndAssignJobs();
 
-        verify(jobService).assignJobsToWorkerBatch(any(UUID.class), any(ZonedDateTime.class), any(ZonedDateTime.class), eq(50));
+        verify(jobService).assignJobsToWorkerBatch(any(UUID.class), eq(50));
         verify(executor, times(2)).execute(any());
     }
 
@@ -116,7 +116,7 @@ class JobExecutorTest {
     void testCheckAndAssignJobsWithExecutionFailure() {
         List<Job> jobs = Collections.singletonList(testJob);
 
-        when(jobService.assignJobsToWorkerBatch(any(UUID.class), any(ZonedDateTime.class), any(ZonedDateTime.class), eq(50)))
+        when(jobService.assignJobsToWorkerBatch(any(UUID.class), eq(50)))
                 .thenReturn(jobs);
         doThrow(new RuntimeException("Executor failed")).when(executor).execute(any(Runnable.class));
 
@@ -129,7 +129,7 @@ class JobExecutorTest {
     void testCheckAndAssignJobsWithDecrementFailure() {
         List<Job> jobs = Collections.singletonList(testJob);
 
-        when(jobService.assignJobsToWorkerBatch(any(UUID.class), any(ZonedDateTime.class), any(ZonedDateTime.class), eq(50)))
+        when(jobService.assignJobsToWorkerBatch(any(UUID.class), eq(50)))
                 .thenReturn(jobs);
         doThrow(new RuntimeException("Executor failed")).when(executor).execute(any(Runnable.class));
         doThrow(new RuntimeException("Decrement failed")).when(jobService).decrementRetryAttempts(any(UUID.class));
@@ -142,7 +142,7 @@ class JobExecutorTest {
 
     @Test
     void testCheckAndAssignJobsWithServiceException() {
-        when(jobService.assignJobsToWorkerBatch(any(), any(), any(), eq(50)))
+        when(jobService.assignJobsToWorkerBatch(any(), eq(50)))
                 .thenThrow(new RuntimeException("Service error"));
 
         // Should not throw exception, should handle gracefully

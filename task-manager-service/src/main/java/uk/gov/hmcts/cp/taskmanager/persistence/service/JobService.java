@@ -65,7 +65,7 @@ public class JobService {
      * @param jsonObjectConverter the JSON object converter, must not be null
      */
     @Autowired
-    public JobService(JobsRepository jobsRepository, JsonObjectConverter jsonObjectConverter) {
+    public JobService(final JobsRepository jobsRepository, final JsonObjectConverter jsonObjectConverter) {
         this.jobsRepository = jobsRepository;
         this.jsonObjectConverter = jsonObjectConverter;
     }
@@ -84,14 +84,14 @@ public class JobService {
      *         ordered by priority and start time
      */
     @Transactional
-    public List<Job> getUnassignedJobs(int batchSize) {
+    public List<Job> getUnassignedJobs(final int batchSize) {
         Pageable pageable = PageRequest.of(0, batchSize);
         return jobsRepository.findUnassignedJobsWithLimit(ZonedDateTime.now(), pageable);
     }
 
     @Transactional
-    public List<Job> assignJobsToWorkerBatch(UUID workerId,ZonedDateTime lockTime, ZonedDateTime currentTime,int batchSize) {
-        return jobsRepository.assignJobsToWorkerBatch(workerId, lockTime, currentTime, batchSize);
+    public List<Job> assignJobsToWorkerBatch(final UUID workerId, final int batchSize) {
+        return jobsRepository.assignJobsToWorkerBatch(workerId, ZonedDateTime.now(), ZonedDateTime.now(), batchSize);
     }
 
     /**
@@ -104,7 +104,7 @@ public class JobService {
      * @throws RuntimeException if the job is not found
      */
     @Transactional
-    public void decrementRetryAttempts(UUID jobId) {
+    public void decrementRetryAttempts(final UUID jobId) {
         Job job = jobsRepository.findByJobId(jobId)
                 .orElseThrow(() -> new RuntimeException("Job not found with id: " + jobId));
 
@@ -122,7 +122,7 @@ public class JobService {
      * @param job the job to insert, must not be null
      */
     @Transactional
-    public void insertJob(Job job) {
+    public void insertJob(final Job job) {
         jobsRepository.save(job);
     }
 
