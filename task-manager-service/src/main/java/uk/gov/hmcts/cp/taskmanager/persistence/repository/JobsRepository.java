@@ -43,29 +43,9 @@ import java.util.UUID;
 public interface JobsRepository extends JpaRepository<Job, UUID> {
 
     /**
-     * Finds all unassigned jobs that are ready to be executed.
-     *
-     * <p>This query uses pessimistic write locking to prevent concurrent access.
-     * Jobs are ordered by priority (ascending) and then by start time (ascending).
-     *
-     * <p>A job is considered unassigned if:
-     * <ul>
-     *   <li>{@code workerId} is null</li>
-     *   <li>{@code assignedTaskStartTime} is less than or equal to the current time</li>
-     * </ul>
-     *
-     * @param currentTime the current time for comparison with job start times
-     * @return a list of unassigned jobs ready for execution, ordered by priority and start time
-     */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT j FROM Job j WHERE j.workerId IS NULL AND j.assignedTaskStartTime <= :currentTime ORDER BY j.priority ASC, j.assignedTaskStartTime ASC")
-    List<Job> findUnassignedJobs(@Param("currentTime") ZonedDateTime currentTime);
-
-    /**
      * Finds unassigned jobs with pagination support.
      *
-     * <p>This method is similar to {@link #findUnassignedJobs(ZonedDateTime)} but supports
-     * limiting the number of results using {@link Pageable}. This is useful for batch
+     * <p>This method limit the number of results using {@link Pageable}. This is useful for batch
      * processing to avoid loading too many jobs at once.
      *
      * <p>Uses pessimistic write locking to prevent concurrent access.
@@ -110,30 +90,6 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
      * @return an Optional containing the job if found, empty otherwise
      */
     Optional<Job> findByJobId(UUID jobId);
-
-    /**
-     * Inserts a new job into the database.
-     *
-     * <p>This method uses a native SQL query to insert a job with all its fields.
-     * The job data is converted to JSONB format for PostgreSQL storage.
-     *
-     * @param jobId the unique job identifier
-     * @param workerId the worker identifier (null for unassigned jobs)
-     * @param workerLockTime the lock timestamp (null for unassigned jobs)
-     * @param assignedTaskName the task name
-     * @param assignedTaskStartTime the scheduled start time
-     * @param jobData the job data as a JSON string
-     * @param retryAttemptsRemaining the number of retry attempts remaining
-     */
-    @Modifying
-    @Query(value = "INSERT INTO jobs(job_id,worker_id,worker_lock_time,assigned_task_name,assigned_task_start_time,job_data,retry_attempts_remaining) values (:jobId,:workerId,:workerLockTime,:assignedTaskName,:assignedTaskStartTime,:jobData,:retryAttemptsRemaining)", nativeQuery = true)
-    void insertJob(@Param("jobId") UUID jobId,
-                   @Param("workerId") UUID workerId,
-                   @Param("workerLockTime") ZonedDateTime workerLockTime,
-                   @Param("assignedTaskName") String assignedTaskName,
-                   @Param("assignedTaskStartTime") ZonedDateTime assignedTaskStartTime,
-                   @Param("jobData") String jobData,
-                   @Param("retryAttemptsRemaining") int retryAttemptsRemaining);
 
     /**
      * Updates the job data for a specific job.
