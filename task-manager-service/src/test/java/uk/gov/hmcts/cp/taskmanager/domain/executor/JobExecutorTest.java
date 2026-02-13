@@ -1,8 +1,25 @@
 package uk.gov.hmcts.cp.taskmanager.domain.executor;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.service.JobService;
 import uk.gov.hmcts.cp.taskmanager.service.task.TaskRegistry;
+
+import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,13 +32,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.time.ZonedDateTime;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 class JobExecutorTest {
 
@@ -33,6 +43,9 @@ class JobExecutorTest {
 
     @Mock
     private PlatformTransactionManager transactionManager;
+
+    @Mock
+    private ThreadPoolTaskExecutor executor;
 
     @InjectMocks
     private JobExecutor jobExecutor;
@@ -57,16 +70,8 @@ class JobExecutorTest {
                 10
         );
 
-        // Initialize executor with test values
-        ReflectionTestUtils.setField(jobExecutor, "corePoolSize", 5);
-        ReflectionTestUtils.setField(jobExecutor, "maxPoolSize", 10);
-        ReflectionTestUtils.setField(jobExecutor, "queueCapacity", 100);
-        ReflectionTestUtils.setField(jobExecutor, "threadNamePrefix", "test-executor-");
-        ReflectionTestUtils.setField(jobExecutor, "waitForTasksOnShutdown", true);
-        ReflectionTestUtils.setField(jobExecutor, "awaitTerminationSeconds", 60);
+        // Initialize batchSize with test values
         ReflectionTestUtils.setField(jobExecutor, "batchSize", 50);
-
-        jobExecutor.init();
     }
 
     @Test
@@ -77,35 +82,11 @@ class JobExecutorTest {
 
     @Test
     void testCheckAndAssignJobsWithNoJobs() {
-        when(jobService.getUnassignedJobs(50)).thenReturn(Collections.emptyList());
+        when(jobService.assignJobsToWorkerBatch(any(UUID.class), eq(50))).thenReturn(Collections.emptyList());
 
         jobExecutor.checkAndAssignJobs();
 
-        verify(jobService).getUnassignedJobs(50);
-        verify(jobService, never()).assignJobToWorker(any(), any());
-    }
-
-    @Test
-    void testCheckAndAssignJobsWithSingleJob() {
-        List<Job> jobs = Collections.singletonList(testJob);
-        Job assignedJob = new Job(
-                testJob.getJobId(),
-                testJob.getJobData(),
-                testJob.getAssignedTaskName(),
-                testJob.getAssignedTaskStartTime(),
-                UUID.randomUUID(),
-                ZonedDateTime.now(),
-                testJob.getRetryAttemptsRemaining(),
-                testJob.getPriority()
-        );
-
-        when(jobService.getUnassignedJobs(50)).thenReturn(jobs);
-        when(jobService.assignJobToWorker(any(UUID.class), any(UUID.class))).thenReturn(assignedJob);
-
-        jobExecutor.checkAndAssignJobs();
-
-        verify(jobService).getUnassignedJobs(50);
-        verify(jobService).assignJobToWorker(eq(testJob.getJobId()), any(UUID.class));
+        verify(executor, never()).execute(any());
     }
 
     @Test
@@ -121,49 +102,26 @@ class JobExecutorTest {
                 5
         );
         List<Job> jobs = Arrays.asList(testJob, job2);
-        Job assignedJob1 = new Job(
-                testJob.getJobId(),
-                testJob.getJobData(),
-                testJob.getAssignedTaskName(),
-                testJob.getAssignedTaskStartTime(),
-                UUID.randomUUID(),
-                ZonedDateTime.now(),
-                testJob.getRetryAttemptsRemaining(),
-                testJob.getPriority()
-        );
-        Job assignedJob2 = new Job(
-                job2.getJobId(),
-                job2.getJobData(),
-                job2.getAssignedTaskName(),
-                job2.getAssignedTaskStartTime(),
-                UUID.randomUUID(),
-                ZonedDateTime.now(),
-                job2.getRetryAttemptsRemaining(),
-                job2.getPriority()
-        );
 
-        when(jobService.getUnassignedJobs(50)).thenReturn(jobs);
-        when(jobService.assignJobToWorker(eq(testJob.getJobId()), any(UUID.class))).thenReturn(assignedJob1);
-        when(jobService.assignJobToWorker(eq(job2.getJobId()), any(UUID.class))).thenReturn(assignedJob2);
+        when(jobService.assignJobsToWorkerBatch(any(UUID.class), eq(50)))
+                .thenReturn(jobs);
 
         jobExecutor.checkAndAssignJobs();
 
-        verify(jobService).getUnassignedJobs(50);
-        verify(jobService, times(2)).assignJobToWorker(any(UUID.class), any(UUID.class));
+        verify(jobService).assignJobsToWorkerBatch(any(UUID.class), eq(50));
+        verify(executor, times(2)).execute(any());
     }
 
     @Test
-    void testCheckAndAssignJobsWithAssignmentFailure() {
+    void testCheckAndAssignJobsWithExecutionFailure() {
         List<Job> jobs = Collections.singletonList(testJob);
 
-        when(jobService.getUnassignedJobs(50)).thenReturn(jobs);
-        when(jobService.assignJobToWorker(any(UUID.class), any(UUID.class)))
-                .thenThrow(new RuntimeException("Assignment failed"));
+        when(jobService.assignJobsToWorkerBatch(any(UUID.class), eq(50)))
+                .thenReturn(jobs);
+        doThrow(new RuntimeException("Executor failed")).when(executor).execute(any(Runnable.class));
 
         jobExecutor.checkAndAssignJobs();
 
-        verify(jobService).getUnassignedJobs(50);
-        verify(jobService).assignJobToWorker(any(UUID.class), any(UUID.class));
         verify(jobService).decrementRetryAttempts(testJob.getJobId());
     }
 
@@ -171,9 +129,9 @@ class JobExecutorTest {
     void testCheckAndAssignJobsWithDecrementFailure() {
         List<Job> jobs = Collections.singletonList(testJob);
 
-        when(jobService.getUnassignedJobs(50)).thenReturn(jobs);
-        when(jobService.assignJobToWorker(any(UUID.class), any(UUID.class)))
-                .thenThrow(new RuntimeException("Assignment failed"));
+        when(jobService.assignJobsToWorkerBatch(any(UUID.class), eq(50)))
+                .thenReturn(jobs);
+        doThrow(new RuntimeException("Executor failed")).when(executor).execute(any(Runnable.class));
         doThrow(new RuntimeException("Decrement failed")).when(jobService).decrementRetryAttempts(any(UUID.class));
 
         // Should not throw exception, should handle gracefully
@@ -184,21 +142,20 @@ class JobExecutorTest {
 
     @Test
     void testCheckAndAssignJobsWithServiceException() {
-        when(jobService.getUnassignedJobs(50))
+        when(jobService.assignJobsToWorkerBatch(any(), eq(50)))
                 .thenThrow(new RuntimeException("Service error"));
 
         // Should not throw exception, should handle gracefully
         assertDoesNotThrow(() -> jobExecutor.checkAndAssignJobs());
 
-        verify(jobService).getUnassignedJobs(50);
-        verify(jobService, never()).assignJobToWorker(any(), any());
+        verify(executor, never()).execute(any());
     }
 
     @Test
     void testDestroy() {
         jobExecutor.destroy();
         // Verify executor shutdown is called (indirectly through reflection)
-        ThreadPoolTaskExecutor executor = (ThreadPoolTaskExecutor) 
+        ThreadPoolTaskExecutor executor = (ThreadPoolTaskExecutor)
                 ReflectionTestUtils.getField(jobExecutor, "executor");
         // Executor should be shutdown
         assertNotNull(executor);
