@@ -1,8 +1,24 @@
 package uk.gov.hmcts.cp.taskmanager.persistence.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import uk.gov.hmcts.cp.taskmanager.domain.converter.JsonObjectConverter;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.repository.JobsRepository;
+
+import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,13 +29,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-
-import java.time.ZonedDateTime;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class JobServiceTest {
@@ -46,22 +55,8 @@ class JobServiceTest {
                 .add("key", "value")
                 .build();
 
-        testJob = new Job(testJobId, testJobData, "TEST_TASK", 
+        testJob = new Job(testJobId, testJobData, "TEST_TASK",
                 ZonedDateTime.now(), null, null, 5, 10);
-    }
-
-    @Test
-    void testGetUnassignedJobs() {
-        List<Job> expectedJobs = Arrays.asList(testJob);
-        when(jobsRepository.findUnassignedJobs(any(ZonedDateTime.class)))
-                .thenReturn(expectedJobs);
-
-        List<Job> result = jobService.getUnassignedJobs();
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(testJob, result.get(0));
-        verify(jobsRepository).findUnassignedJobs(any(ZonedDateTime.class));
     }
 
     @Test
@@ -108,7 +103,7 @@ class JobServiceTest {
     void testDecrementRetryAttemptsJobNotFound() {
         when(jobsRepository.findByJobId(testJobId)).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, 
+        assertThrows(RuntimeException.class,
                 () -> jobService.decrementRetryAttempts(testJobId));
     }
 

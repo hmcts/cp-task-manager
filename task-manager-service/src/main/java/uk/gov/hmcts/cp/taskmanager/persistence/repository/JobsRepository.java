@@ -81,7 +81,7 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
 
     @Modifying
     @Query(value = """
-                        WITH cte AS (
+                        WITH uaj AS (
                             SELECT job_id
                             FROM jobs
                             WHERE worker_id IS NULL
@@ -94,8 +94,8 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
                         UPDATE jobs j
                         SET worker_id = :workerId,
                             worker_lock_time = :lockTime
-                        FROM cte
-                        WHERE j.job_id = cte.job_id
+                        FROM uaj
+                        WHERE j.job_id = uaj.job_id
                         RETURNING j.*
                     """, nativeQuery = true)
     List<Job> assignJobsToWorkerBatch(@Param("workerId") UUID workerId,

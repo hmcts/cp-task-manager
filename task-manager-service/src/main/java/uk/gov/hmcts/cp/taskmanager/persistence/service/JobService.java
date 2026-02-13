@@ -71,30 +71,10 @@ public class JobService {
     }
 
     /**
-     * Retrieves all unassigned jobs that are ready to be executed.
-     *
-     * <p>This method finds jobs that:
-     * <ul>
-     *   <li>Have no worker assigned ({@code workerId} is null)</li>
-     *   <li>Have reached their scheduled start time</li>
-     * </ul>
-     *
-     * <p>Jobs are ordered by priority (ascending, 1 is highest) and then by start time (ascending).
-     * Uses pessimistic write locking to prevent concurrent access.
-     *
-     * @return a list of unassigned jobs ready for execution, ordered by priority and start time
-     */
-    @Transactional
-    public List<Job> getUnassignedJobs() {
-        return jobsRepository.findUnassignedJobs(ZonedDateTime.now());
-    }
-
-    /**
      * Retrieves unassigned jobs with a limit on the number of results.
      *
-     * <p>This method is similar to {@link #getUnassignedJobs()} but limits the number
-     * of results returned. This is useful for batch processing to avoid loading too
-     * many jobs at once and improve performance.
+     * <p>This method limits the number of results returned. This is useful for batch processing to
+     * avoid loading too many jobs at once and improve performance.
      *
      * <p>Jobs are ordered by priority (ascending) and then by start time (ascending).
      * Uses pessimistic write locking to prevent concurrent access.
@@ -137,8 +117,7 @@ public class JobService {
     /**
      * Inserts a new job into the database.
      *
-     * <p>This method persists a new job entity. The jobId will be automatically
-     * generated if not set (via {@link Job#onCreate()}).
+     * <p>This method persists a new job entity.
      *
      * @param job the job to insert, must not be null
      */
@@ -158,7 +137,7 @@ public class JobService {
      */
     @Transactional
     public void updateJobTaskData(final UUID jobId, final JsonObject data) {
-        String jobDataString = jsonObjectConverter.convertToDatabaseColumn(data);
+        final String jobDataString = jsonObjectConverter.convertToDatabaseColumn(data);
         jobsRepository.updateJobData(jobDataString, jobId);
     }
 

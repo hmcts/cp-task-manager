@@ -240,7 +240,7 @@ public class TaskExecutor implements Runnable{
      */
     private boolean canRetry(final ExecutableTask task, final ExecutionInfo taskResponse) {
         final boolean shouldRetryTask = taskResponse.isShouldRetry();
-        final Integer retryAttemptsRemaining = job.getRetryAttemptsRemaining();
+        final int retryAttemptsRemaining = job.getRetryAttemptsRemaining();
         final boolean taskHasRetryDurationsConfigured = task.getRetryDurationsInSecs().isPresent();
 
         logger.info("Checking if task is retryable, jobID:{}, executionInfo.shouldRetry:{}, retryAttemptsRemaining:{}, has task configured with retryDurationsInSecs:{}",
