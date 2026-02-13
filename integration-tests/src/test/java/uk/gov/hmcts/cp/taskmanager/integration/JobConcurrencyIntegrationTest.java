@@ -1,8 +1,8 @@
 package uk.gov.hmcts.cp.taskmanager.integration;
 
 import static java.util.UUID.randomUUID;
-import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import uk.gov.hmcts.cp.taskmanager.integration.config.IntegrationTestConfiguration;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,10 +36,11 @@ class JobConcurrencyIntegrationTest extends PostgresIntegrationTestBase {
     @Test
     void testReplicateRaceConditionWithPostgres() throws InterruptedException {
         // 1. Setup: Insert a single job into the real Postgres container
-        final UUID jobId = randomUUID();
+        UUID workerId = randomUUID();
+
         transactionTemplate.executeWithoutResult(status -> {
             final Job job = new Job();
-            job.setJobId(jobId);
+            job.setJobId(randomUUID());
             job.setAssignedTaskName("test-task");
             job.setJobData(Json.createObjectBuilder()
                     .add("testKey", "testValue")
@@ -50,34 +52,35 @@ class JobConcurrencyIntegrationTest extends PostgresIntegrationTestBase {
             jobService.insertJob(job);
         });
 
-        final int threadCount = 2;
-        final ExecutorService executor = newFixedThreadPool(threadCount);
-        final CyclicBarrier barrier = new CyclicBarrier(threadCount);
-        final AtomicInteger successfulClaims = new AtomicInteger(0);
-        final CountDownLatch latch = new CountDownLatch(threadCount);
+        int threadCount = 2;
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 
-        // 2. Run two threads simultaneously
-        for (int i = 0; i < threadCount; i++) {
-            executor.submit(() -> {
-                try {
-                    barrier.await(); // Sync threads to hit the DB at once
+        CyclicBarrier barrier = new CyclicBarrier(threadCount);
+        CountDownLatch latch = new CountDownLatch(threadCount);
+        AtomicInteger successfulClaims = new AtomicInteger();
 
-                    final var jobs = jobService.assignJobsToWorkerBatch(jobId, 10);
-                    if (!jobs.isEmpty()) {
-                        successfulClaims.incrementAndGet();
-                    }
-                } catch (Exception e) {
-                    System.err.println("Thread failed: " + e.getMessage());
-                } finally {
-                    latch.countDown();
+        Runnable task = () -> {
+            try {
+                barrier.await(); // force true race
+                var jobs = jobService.assignJobsToWorkerBatch(workerId, 10);
+                if (!jobs.isEmpty()) {
+                    successfulClaims.incrementAndGet();
                 }
-            });
+            } catch (Exception e) {
+                throw new RuntimeException(e); // don't swallow exceptions
+            } finally {
+                latch.countDown();
+            }
+        };
+
+        for (int i = 0; i < threadCount; i++) {
+            executor.submit(task);
         }
 
-        latch.await(10, TimeUnit.SECONDS);
+        assertTrue(latch.await(5, TimeUnit.SECONDS), "Threads did not finish in time");
+        executor.shutdownNow();
 
-        // 3. Verification
         assertEquals(1, successfulClaims.get(),
-                "RACE CONDITION DETECTED: Multiple threads claimed the same job!");
+                "RACE CONDITION DETECTED: Multiple threads claimed the same job");
     }
 }
