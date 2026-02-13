@@ -36,7 +36,7 @@ class JobConcurrencyIntegrationTest extends PostgresIntegrationTestBase {
     @Test
     void testReplicateRaceConditionWithPostgres() throws InterruptedException {
         // 1. Setup: Insert a single job into the real Postgres container
-        UUID workerId = randomUUID();
+        final UUID workerId = randomUUID();
 
         transactionTemplate.executeWithoutResult(status -> {
             final Job job = new Job();
@@ -52,14 +52,14 @@ class JobConcurrencyIntegrationTest extends PostgresIntegrationTestBase {
             jobService.insertJob(job);
         });
 
-        int threadCount = 2;
-        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        final int threadCount = 2;
+        final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 
-        CyclicBarrier barrier = new CyclicBarrier(threadCount);
-        CountDownLatch latch = new CountDownLatch(threadCount);
-        AtomicInteger successfulClaims = new AtomicInteger();
+        final CyclicBarrier barrier = new CyclicBarrier(threadCount);
+        final CountDownLatch latch = new CountDownLatch(threadCount);
+        final AtomicInteger successfulClaims = new AtomicInteger();
 
-        Runnable task = () -> {
+        final Runnable task = () -> {
             try {
                 barrier.await(); // force true race
                 var jobs = jobService.assignJobsToWorkerBatch(workerId, 10);
