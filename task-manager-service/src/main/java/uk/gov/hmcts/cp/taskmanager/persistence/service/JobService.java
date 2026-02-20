@@ -1,5 +1,7 @@
 package uk.gov.hmcts.cp.taskmanager.persistence.service;
 
+import static java.util.Objects.nonNull;
+
 import uk.gov.hmcts.cp.taskmanager.domain.converter.JsonObjectConverter;
 import uk.gov.hmcts.cp.taskmanager.domain.executor.JobExecutor;
 import uk.gov.hmcts.cp.taskmanager.domain.executor.TaskExecutor;
@@ -108,7 +110,7 @@ public class JobService {
         Job job = jobsRepository.findByJobId(jobId)
                 .orElseThrow(() -> new RuntimeException("Job not found with id: " + jobId));
 
-        if (job.getRetryAttemptsRemaining() > 0) {
+        if (nonNull(job.getRetryAttemptsRemaining()) && job.getRetryAttemptsRemaining() > 0) {
             job.setRetryAttemptsRemaining(job.getRetryAttemptsRemaining() - 1);
             jobsRepository.save(job);
         }

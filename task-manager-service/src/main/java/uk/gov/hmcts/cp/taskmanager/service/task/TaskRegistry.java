@@ -163,7 +163,7 @@ public class TaskRegistry {
     public Integer findRetryAttemptsRemainingFor(final String taskName) {
         return getTask(taskName)
                 .map(this::findRetryAttemptsRemainingFor)
-                .orElse(0);
+                .orElse(null);
     }
 
     /**
@@ -178,7 +178,7 @@ public class TaskRegistry {
     private Integer findRetryAttemptsRemainingFor(final ExecutableTask task) {
         return task.getRetryDurationsInSecs()
                 .map(List::size)
-                .orElse(0);
+                .orElse(null);
     }
 }
 

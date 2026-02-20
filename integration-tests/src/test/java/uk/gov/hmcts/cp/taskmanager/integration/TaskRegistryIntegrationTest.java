@@ -76,7 +76,7 @@ class TaskRegistryIntegrationTest extends PostgresIntegrationTestBase {
         Integer retryAttempts = taskRegistry.findRetryAttemptsRemainingFor("TEST_COMPLETED_TASK");
 
         // Then - Should return 0
-        assertThat(retryAttempts).isEqualTo(0);
+        assertThat(retryAttempts).isNull();
     }
 
     @Test
@@ -86,7 +86,7 @@ class TaskRegistryIntegrationTest extends PostgresIntegrationTestBase {
         Integer retryAttempts = taskRegistry.findRetryAttemptsRemainingFor("NON_EXISTENT_TASK");
 
         // Then - Should return 0
-        assertThat(retryAttempts).isEqualTo(0);
+        assertThat(retryAttempts).isNull();
     }
 }
 

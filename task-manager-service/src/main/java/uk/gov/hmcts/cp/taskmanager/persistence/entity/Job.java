@@ -108,8 +108,8 @@ public class Job {
      * Number of retry attempts remaining for this job.
      * Decremented on each retry attempt. Zero means no retries remaining.
      */
-    @Column(name = "retry_attempts_remaining", nullable = false)
-    private int retryAttemptsRemaining;
+    @Column(name = "retry_attempts_remaining")
+    private Integer retryAttemptsRemaining;
 
     /**
      * Job priority (1-10, where 1 is highest priority).

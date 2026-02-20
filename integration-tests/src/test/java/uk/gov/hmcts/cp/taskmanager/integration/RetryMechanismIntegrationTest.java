@@ -149,6 +149,9 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
         final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
         assertThat(task.isEmpty()).isFalse();
         assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+
+        //no workerId assigned when retryAttempts == 0
+        assertThat(jobsRepository.assignJobsToWorkerBatch(randomUUID(), now(), now(), 10)).isEmpty();
     }
 
     @Test

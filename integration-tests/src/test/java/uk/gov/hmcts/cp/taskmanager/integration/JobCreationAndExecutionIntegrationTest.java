@@ -90,7 +90,7 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
             assertThat(job.getAssignedTaskName()).isEqualTo("TEST_COMPLETED_TASK");
             assertThat(job.getJobData()).isNotNull();
             assertThat(job.getWorkerId()).isNull();
-            assertThat(job.getRetryAttemptsRemaining()).isEqualTo(0);
+            assertThat(job.getRetryAttemptsRemaining()).isNull();
         });
 
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {

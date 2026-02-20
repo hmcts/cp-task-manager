@@ -16,6 +16,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.Objects.nonNull;
 import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo.executionInfo;
 import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.COMPLETED;
 import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.INPROGRESS;
@@ -240,14 +241,14 @@ public class TaskExecutor implements Runnable{
      */
     private boolean canRetry(final ExecutableTask task, final ExecutionInfo taskResponse) {
         final boolean shouldRetryTask = taskResponse.isShouldRetry();
-        final int retryAttemptsRemaining = job.getRetryAttemptsRemaining();
+        final Integer retryAttemptsRemaining = job.getRetryAttemptsRemaining();
         final boolean taskHasRetryDurationsConfigured = task.getRetryDurationsInSecs().isPresent();
 
         logger.info("Checking if task is retryable, jobID:{}, executionInfo.shouldRetry:{}, retryAttemptsRemaining:{}, has task configured with retryDurationsInSecs:{}",
                 job.getJobId(), shouldRetryTask, retryAttemptsRemaining, taskHasRetryDurationsConfigured);
 
         return shouldRetryTask
-                && retryAttemptsRemaining > 0
+                && nonNull(retryAttemptsRemaining) && retryAttemptsRemaining > 0
                 && taskHasRetryDurationsConfigured;
     }
 
