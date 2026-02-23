@@ -6,6 +6,7 @@ import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.COMPLETED;
+import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.INPROGRESS;
 
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
@@ -131,6 +132,35 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
     }
 
     @Test
+    void testInProgressTaskExecutionWhenNoRetryAttempts() throws InterruptedException {
+        // Given - Create a job
+        final UUID taskId = randomUUID();
+        final ExecutionInfo executionInfo = new ExecutionInfo(
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
+                "TEST_COMPLETED_TASK",
+                now().minusSeconds(1),
+                ExecutionStatus.STARTED,
+                false
+        );
+        executionService.executeWith(executionInfo);
+
+        // Wait for job to be assigned and executed
+        await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
+            // Job should be deleted after completion
+            var jobs = jobsRepository.findAll();
+            assertThat(jobs).isNotEmpty();
+        });
+
+        assertTaskExecutedOnlyOnceWhenNoRetries(taskId);
+        Thread.sleep(3000);
+        assertTaskExecutedOnlyOnceWhenNoRetries(taskId);
+    }
+
+
+    @Test
     void testJobWithFutureStartTime() {
         // Given - Create a job with future start time
         final UUID taskId = randomUUID();
@@ -197,6 +227,16 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
             final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
             assertThat(task.isEmpty()).isFalse();
             assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+        });
+    }
+
+
+    private void assertTaskExecutedOnlyOnceWhenNoRetries(final UUID taskId) {
+        await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
+            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            assertThat(task.isEmpty()).isFalse();
+            assertThat(task.get().getStatus().equals(COMPLETED.name())).isTrue();
+            assertThat(task.get().getJobData().containsKey(ATTEMPTS_KEY)).isFalse();
         });
     }
 }
