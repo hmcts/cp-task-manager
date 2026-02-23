@@ -16,6 +16,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo.executionInfo;
 import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.COMPLETED;
@@ -213,9 +214,18 @@ public class TaskExecutor implements Runnable{
             } else {
                 // If retries are exhausted, preserve the current retryAttemptsRemaining (0) instead of resetting it
                 // Only reset to initial value if we're moving to a different task
-                final Integer retryAttemptsRemaining = executionResponse.getAssignedTaskName().equals(job.getAssignedTaskName()) 
+                Integer retryAttemptsRemaining = executionResponse.getAssignedTaskName().equals(job.getAssignedTaskName())
                     ? job.getRetryAttemptsRemaining() 
                     : taskRegistry.findRetryAttemptsRemainingFor(executionResponse.getAssignedTaskName());
+                if (isNull(retryAttemptsRemaining)) {
+                    //no retry attempts set
+                    //when task is chained from another task; ensure task executed at least once
+                    //when same task that was executed; ensure task no more executed
+                    retryAttemptsRemaining = !executionResponse.getAssignedTaskName().equals(job.getAssignedTaskName()) && isNull(retryAttemptsRemaining)
+                            ? Integer.valueOf(1)
+                            : Integer.valueOf(0);
+                }
+
                 jobService.updateJobTaskData(job.getJobId(), executionResponse.getJobData());
                 jobService.updateNextTaskDetails(job.getJobId(), executionResponse.getAssignedTaskName(), executionResponse.getAssignedTaskStartTime(), retryAttemptsRemaining);
                 jobService.releaseJob(job.getJobId());

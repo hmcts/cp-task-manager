@@ -92,6 +92,11 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
             assertThat(task.isEmpty()).isFalse();
             assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
         });
+
+        await().atMost(java.time.Duration.ofSeconds(15)).untilAsserted(() -> {
+            final List<Job> jobs = jobsRepository.findAll();
+            assertThat(jobs).isEmpty();
+        });
     }
 
     @Test

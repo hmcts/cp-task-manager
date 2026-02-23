@@ -140,7 +140,7 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
                         .add("test", "data")
                         .add(ID_KEY, taskId.toString())
                         .build(),
-                "TEST_COMPLETED_TASK",
+                "TEST_INPROGRESS_TASK",
                 now().minusSeconds(1),
                 ExecutionStatus.STARTED,
                 false
@@ -235,8 +235,8 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
             final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
             assertThat(task.isEmpty()).isFalse();
-            assertThat(task.get().getStatus().equals(COMPLETED.name())).isTrue();
-            assertThat(task.get().getJobData().containsKey(ATTEMPTS_KEY)).isFalse();
+            assertThat(task.get().getStatus().equals(INPROGRESS.name())).isTrue();
+            assertThat(task.get().getJobData().getInt(ATTEMPTS_KEY)).isEqualTo(1);
         });
     }
 }
