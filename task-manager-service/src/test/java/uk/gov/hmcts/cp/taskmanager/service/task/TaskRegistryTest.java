@@ -28,7 +28,7 @@ class TaskRegistryTest {
     @Test
     void testFindRetryAttemptsRemainingForTaskNotFound() {
         Integer retryAttempts = taskRegistry.findRetryAttemptsRemainingFor("NON_EXISTENT");
-        assertEquals(0, retryAttempts);
+        assertNull(retryAttempts);
     }
 
     @Test

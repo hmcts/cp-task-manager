@@ -65,6 +65,7 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
                             SELECT job_id
                             FROM jobs
                             WHERE worker_id IS NULL
+                              AND (retry_attempts_remaining IS NULL OR retry_attempts_remaining > 0)
                               AND assigned_task_start_time <= :currentTime
                             ORDER BY priority ASC,
                                      assigned_task_start_time ASC
@@ -119,7 +120,7 @@ public interface JobsRepository extends JpaRepository<Job, UUID> {
     @Query(value = "UPDATE jobs set assigned_task_name= :assignedTaskName, assigned_task_start_time= :assignedTaskStartTime, retry_attempts_remaining= :retryAttemptsRemaining where job_id= :jobId", nativeQuery = true)
     void updateNextTaskDetails(@Param("assignedTaskName") String assignedTaskName,
                                 @Param("assignedTaskStartTime") ZonedDateTime assignedTaskStartTime,
-                                @Param("retryAttemptsRemaining") int retryAttemptsRemaining,
+                                @Param("retryAttemptsRemaining") Integer retryAttemptsRemaining,
                                 @Param("jobId") UUID jobId);
 
     /**

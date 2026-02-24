@@ -6,12 +6,13 @@ import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.COMPLETED;
+import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.INPROGRESS;
 
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
 import uk.gov.hmcts.cp.taskmanager.integration.config.IntegrationTestConfiguration;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatus;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatusRepository;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatus;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatusService;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.repository.JobsRepository;
 import uk.gov.hmcts.cp.taskmanager.persistence.service.JobService;
@@ -49,7 +50,7 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    private TaskStatusRepository taskStatusRepository;
+    private TaskStatusService taskStatusService;
 
     @AfterEach
     void tearDown() {
@@ -114,13 +115,13 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
             }
         });
 
-        final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+        final Optional<TaskStatus> task = taskStatusService.getById(taskId);
         assertThat(task.isEmpty()).isFalse();
-        assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+        assertThat(task.stream().allMatch(t -> INPROGRESS.name().equals(t.getStatus()))).isTrue();
     }
 
     @Test
-    void testRetryExhausted() {
+    void testRetryExhaustedAndTaskExecutedAsPerTheConfigRetryAttempts() throws InterruptedException {
         // Given - Create a job with retry task that will exhaust retries
         final UUID taskId = randomUUID();
         ExecutionInfo executionInfo = new ExecutionInfo(
@@ -136,7 +137,7 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
         executionService.executeWith(executionInfo);
 
         // When - Wait for all retries to be exhausted
-        // Then - Job should eventually be deleted or remain with 0 retries
+        // Then - Job is not deleted and has retryAttemptsRemaining 0
         await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
             List<Job> jobs = jobsRepository.findAll();
             if (!jobs.isEmpty()) {
@@ -146,9 +147,12 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
             }
         });
 
-        final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
-        assertThat(task.isEmpty()).isFalse();
-        assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+        //no workerId assigned when retryAttempts == 0
+        assertThat(jobsRepository.assignJobsToWorkerBatch(randomUUID(), now(), now(), 10)).isEmpty();
+
+        assertTaskExecutedAsPerTheConfigRetryAttempts(taskId);
+        Thread.sleep(4000);
+        assertTaskExecutedAsPerTheConfigRetryAttempts(taskId);
     }
 
     @Test
@@ -174,9 +178,16 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
             assertThat(jobs).isEmpty(); // Job should be completed and deleted
         });
 
-        final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+        final Optional<TaskStatus> task = taskStatusService.getById(taskId);
         assertThat(task.isEmpty()).isFalse();
         assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+    }
+
+    private void assertTaskExecutedAsPerTheConfigRetryAttempts(final UUID taskId) {
+        final Optional<TaskStatus> task = taskStatusService.getById(taskId);
+        assertThat(task.isEmpty()).isFalse();
+        assertThat(task.get().getStatus().equals(INPROGRESS.name())).isTrue();
+        assertThat(task.get().getJobData().getInt(ATTEMPTS_KEY)).isEqualTo(3);
     }
 }
 

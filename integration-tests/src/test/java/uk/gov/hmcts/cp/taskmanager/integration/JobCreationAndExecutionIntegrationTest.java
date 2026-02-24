@@ -6,13 +6,14 @@ import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.COMPLETED;
+import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.INPROGRESS;
 
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
 import uk.gov.hmcts.cp.taskmanager.domain.converter.JsonObjectConverter;
 import uk.gov.hmcts.cp.taskmanager.integration.config.IntegrationTestConfiguration;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatus;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatusRepository;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatus;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatusService;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.repository.JobsRepository;
 import uk.gov.hmcts.cp.taskmanager.persistence.service.JobService;
@@ -54,7 +55,7 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    private TaskStatusRepository taskStatusRepository;
+    private TaskStatusService taskStatusService;
 
     @AfterEach
     void tearDown() {
@@ -90,13 +91,13 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
             assertThat(job.getAssignedTaskName()).isEqualTo("TEST_COMPLETED_TASK");
             assertThat(job.getJobData()).isNotNull();
             assertThat(job.getWorkerId()).isNull();
-            assertThat(job.getRetryAttemptsRemaining()).isEqualTo(0);
+            assertThat(job.getRetryAttemptsRemaining()).isNull();
         });
 
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
-            assertThat(task.isEmpty()).isFalse();
-            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+            final Optional<TaskStatus> taskStatus = taskStatusService.getById(taskId);
+            assertThat(taskStatus.isPresent()).isTrue();
+            assertThat(taskStatus.get().getStatus().equals(COMPLETED.name())).isTrue();
         });
     }
 
@@ -124,11 +125,40 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
         });
 
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
-            assertThat(task.isEmpty()).isFalse();
-            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+            final Optional<TaskStatus> taskStatus = taskStatusService.getById(taskId);
+            assertThat(taskStatus.isPresent()).isTrue();
+            assertThat(taskStatus.get().getStatus().equals(COMPLETED.name())).isTrue();
         });
     }
+
+    @Test
+    void testInProgressTaskExecutionWhenNoRetryAttempts() throws InterruptedException {
+        // Given - Create a job
+        final UUID taskId = randomUUID();
+        final ExecutionInfo executionInfo = new ExecutionInfo(
+                createObjectBuilder()
+                        .add("test", "data")
+                        .add(ID_KEY, taskId.toString())
+                        .build(),
+                "TEST_INPROGRESS_TASK",
+                now().minusSeconds(1),
+                ExecutionStatus.STARTED,
+                false
+        );
+        executionService.executeWith(executionInfo);
+
+        // Wait for job to be assigned and executed
+        await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
+            // Job should not be deleted after completion
+            var jobs = jobsRepository.findAll();
+            assertThat(jobs).isNotEmpty();
+        });
+
+        assertTaskExecutedOnlyOnceWhenNoRetries(taskId);
+        Thread.sleep(3500);
+        assertTaskExecutedOnlyOnceWhenNoRetries(taskId);
+    }
+
 
     @Test
     void testJobWithFutureStartTime() {
@@ -194,9 +224,19 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
         });
 
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            final Optional<TaskStatus> taskStatus = taskStatusService.getById(taskId);
+            assertThat(taskStatus.isPresent()).isTrue();
+            assertThat(taskStatus.get().getStatus().equals(COMPLETED.name())).isTrue();
+        });
+    }
+
+
+    private void assertTaskExecutedOnlyOnceWhenNoRetries(final UUID taskId) {
+        await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
+            final Optional<TaskStatus> task = taskStatusService.getById(taskId);
             assertThat(task.isEmpty()).isFalse();
-            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+            assertThat(task.get().getStatus().equals(INPROGRESS.name())).isTrue();
+            assertThat(task.get().getJobData().getInt(ATTEMPTS_KEY)).isEqualTo(1);
         });
     }
 }

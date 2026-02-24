@@ -12,6 +12,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public abstract class PostgresIntegrationTestBase {
 
     public static final String ID_KEY = "id";
+    public static final String ATTEMPTS_KEY = "no_of_attempts";
 
     @Container
     static PostgreSQLContainer<?> postgres =

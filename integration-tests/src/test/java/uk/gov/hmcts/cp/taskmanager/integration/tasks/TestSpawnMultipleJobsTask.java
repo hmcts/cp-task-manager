@@ -9,8 +9,8 @@ import static uk.gov.hmcts.cp.taskmanager.integration.PostgresIntegrationTestBas
 
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatus;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatusService;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatus;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatusService;
 import uk.gov.hmcts.cp.taskmanager.service.ExecutionService;
 import uk.gov.hmcts.cp.taskmanager.service.task.ExecutableTask;
 import uk.gov.hmcts.cp.taskmanager.service.task.Task;
@@ -64,7 +64,7 @@ public class TestSpawnMultipleJobsTask implements ExecutableTask {
         }
 
         final UUID id = jobDataPayload.containsKey(ID_KEY) ? fromString(jobDataPayload.getString(ID_KEY)) : randomUUID();
-        taskStatusService.insertTaskStatus(new TaskStatus(id, jobDataPayload, COMPLETED.name(), now()));
+        taskStatusService.saveStatus(new TaskStatus(id, jobDataPayload, COMPLETED.name(), now()));
 
         return executionInfo().from(executionInfo)
                 .withExecutionStatus(COMPLETED)
