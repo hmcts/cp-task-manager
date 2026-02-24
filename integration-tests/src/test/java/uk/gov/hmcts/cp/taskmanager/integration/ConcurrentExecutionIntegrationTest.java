@@ -10,8 +10,8 @@ import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.COMPLETED;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
 import uk.gov.hmcts.cp.taskmanager.integration.config.IntegrationTestConfiguration;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatus;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatusRepository;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatus;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatusService;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.repository.JobsRepository;
 import uk.gov.hmcts.cp.taskmanager.service.ExecutionService;
@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.json.Json;
 import org.junit.jupiter.api.AfterEach;
@@ -47,7 +48,7 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
     private JobsRepository jobsRepository;
 
     @Autowired
-    private TaskStatusRepository taskStatusRepository;
+    private TaskStatusService taskStatusService;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -96,9 +97,11 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
         });
         // And - All task status updated
         await().atMost(java.time.Duration.ofSeconds(15)).untilAsserted(() -> {
-            final List<TaskStatus> tasks = taskStatusRepository.findAllById(taskIdList);
-            assertThat(tasks.size()).isEqualTo(jobCount);
-            assertThat(tasks.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+            taskIdList.forEach(taskId -> {
+                final Optional<TaskStatus> taskStatus = taskStatusService.getById(taskId);
+                assertThat(taskStatus.isPresent()).isTrue();
+                assertThat(taskStatus.get().getStatus().equals(COMPLETED.name())).isTrue();
+            });
         });
     }
 
@@ -129,9 +132,9 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
         });
 
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
-            assertThat(task.isEmpty()).isFalse();
-            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+            final Optional<TaskStatus> taskStatus = taskStatusService.getById(taskId);
+            assertThat(taskStatus.isPresent()).isTrue();
+            assertThat(taskStatus.get().getStatus().equals(COMPLETED.name())).isTrue();
         });
     }
 
@@ -166,9 +169,14 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
         });
 
         await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
-            final List<TaskStatus> tasks = taskStatusRepository.findAllById(taskIdList);
-            assertThat(tasks.size()).isEqualTo(jobCount);
-            assertThat(tasks.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+            final AtomicInteger taskCount = new AtomicInteger();
+            taskIdList.forEach(taskId -> {
+                final Optional<TaskStatus> taskStatus = taskStatusService.getById(taskId);
+                assertThat(taskStatus.isPresent()).isTrue();
+                assertThat(taskStatus.get().getStatus().equals(COMPLETED.name())).isTrue();
+                taskCount.getAndIncrement();
+            });
+            assertThat(taskCount.get()).isEqualTo(jobCount);
         });
     }
 
@@ -214,9 +222,14 @@ class ConcurrentExecutionIntegrationTest extends PostgresIntegrationTestBase {
         });
 
         await().atMost(java.time.Duration.ofSeconds(20)).untilAsserted(() -> {
-            final List<TaskStatus> tasks = taskStatusRepository.findAllById(taskIdList);
-            assertThat(tasks.size()).isEqualTo(threadCount * jobsPerThread);
-            assertThat(tasks.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+            final AtomicInteger taskCount = new AtomicInteger();
+            taskIdList.forEach(taskId -> {
+                final Optional<TaskStatus> taskStatus = taskStatusService.getById(taskId);
+                assertThat(taskStatus.isPresent()).isTrue();
+                assertThat(taskStatus.get().getStatus().equals(COMPLETED.name())).isTrue();
+                taskCount.getAndIncrement();
+            });
+            assertThat(taskCount.get()).isEqualTo(threadCount * jobsPerThread);
         });
     }
 }

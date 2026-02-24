@@ -10,8 +10,8 @@ import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.COMPLETED;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
 import uk.gov.hmcts.cp.taskmanager.integration.config.IntegrationTestConfiguration;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatus;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatusRepository;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatus;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatusService;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.repository.JobsRepository;
 import uk.gov.hmcts.cp.taskmanager.service.ExecutionService;
@@ -44,7 +44,7 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    private TaskStatusRepository taskStatusRepository;
+    private TaskStatusService taskStatusService;
 
     @AfterEach
     void tearDown() {
@@ -88,7 +88,7 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
         });
 
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
-            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            final Optional<TaskStatus> task = taskStatusService.getById(taskId);
             assertThat(task.isEmpty()).isFalse();
             assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
         });
@@ -128,7 +128,7 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
         });
 
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
-            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            final Optional<TaskStatus> task = taskStatusService.getById(taskId);
             assertThat(task.isEmpty()).isFalse();
             assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
         });
@@ -158,7 +158,7 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
         });
 
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
-            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            final Optional<TaskStatus> task = taskStatusService.getById(taskId);
             assertThat(task.isEmpty()).isFalse();
             assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
         });
@@ -188,7 +188,7 @@ class WorkflowExecutionIntegrationTest extends PostgresIntegrationTestBase {
         });
 
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
-            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            final Optional<TaskStatus> task = taskStatusService.getById(taskId);
             assertThat(task.isEmpty()).isFalse();
             assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
         });

@@ -12,8 +12,8 @@ import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
 import uk.gov.hmcts.cp.taskmanager.domain.converter.JsonObjectConverter;
 import uk.gov.hmcts.cp.taskmanager.integration.config.IntegrationTestConfiguration;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatus;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatusRepository;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatus;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatusService;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.repository.JobsRepository;
 import uk.gov.hmcts.cp.taskmanager.persistence.service.JobService;
@@ -55,7 +55,7 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    private TaskStatusRepository taskStatusRepository;
+    private TaskStatusService taskStatusService;
 
     @AfterEach
     void tearDown() {
@@ -95,9 +95,9 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
         });
 
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
-            assertThat(task.isEmpty()).isFalse();
-            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+            final Optional<TaskStatus> taskStatus = taskStatusService.getById(taskId);
+            assertThat(taskStatus.isPresent()).isTrue();
+            assertThat(taskStatus.get().getStatus().equals(COMPLETED.name())).isTrue();
         });
     }
 
@@ -125,9 +125,9 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
         });
 
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
-            assertThat(task.isEmpty()).isFalse();
-            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+            final Optional<TaskStatus> taskStatus = taskStatusService.getById(taskId);
+            assertThat(taskStatus.isPresent()).isTrue();
+            assertThat(taskStatus.get().getStatus().equals(COMPLETED.name())).isTrue();
         });
     }
 
@@ -149,13 +149,13 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
 
         // Wait for job to be assigned and executed
         await().atMost(java.time.Duration.ofSeconds(10)).untilAsserted(() -> {
-            // Job should be deleted after completion
+            // Job should not be deleted after completion
             var jobs = jobsRepository.findAll();
             assertThat(jobs).isNotEmpty();
         });
 
         assertTaskExecutedOnlyOnceWhenNoRetries(taskId);
-        Thread.sleep(3000);
+        Thread.sleep(3500);
         assertTaskExecutedOnlyOnceWhenNoRetries(taskId);
     }
 
@@ -224,16 +224,16 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
         });
 
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
-            assertThat(task.isEmpty()).isFalse();
-            assertThat(task.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+            final Optional<TaskStatus> taskStatus = taskStatusService.getById(taskId);
+            assertThat(taskStatus.isPresent()).isTrue();
+            assertThat(taskStatus.get().getStatus().equals(COMPLETED.name())).isTrue();
         });
     }
 
 
     private void assertTaskExecutedOnlyOnceWhenNoRetries(final UUID taskId) {
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            final Optional<TaskStatus> task = taskStatusRepository.findById(taskId);
+            final Optional<TaskStatus> task = taskStatusService.getById(taskId);
             assertThat(task.isEmpty()).isFalse();
             assertThat(task.get().getStatus().equals(INPROGRESS.name())).isTrue();
             assertThat(task.get().getJobData().getInt(ATTEMPTS_KEY)).isEqualTo(1);

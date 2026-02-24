@@ -10,8 +10,8 @@ import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.COMPLETED;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
 import uk.gov.hmcts.cp.taskmanager.integration.config.IntegrationTestConfiguration;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatus;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatusRepository;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatus;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatusService;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.repository.JobsRepository;
 import uk.gov.hmcts.cp.taskmanager.persistence.service.JobService;
@@ -49,7 +49,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    private TaskStatusRepository taskStatusRepository;
+    private TaskStatusService taskStatusService;
 
     @AfterEach
     void tearDown() {
@@ -104,9 +104,11 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
         });
 
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            final List<TaskStatus> tasks = taskStatusRepository.findAllById(List.of(taskId1, taskId2, taskId3));
-            assertThat(tasks.size()).isEqualTo(3);
-            assertThat(tasks.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+            List.of(taskId1, taskId2, taskId3).forEach(taskId -> {
+                final Optional<TaskStatus> taskStatus = taskStatusService.getById(taskId);
+                assertThat(taskStatus.isPresent()).isTrue();
+                assertThat(taskStatus.get().getStatus().equals(COMPLETED.name())).isTrue();
+            });
         });
     }
 
@@ -149,9 +151,11 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
         });
 
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            final List<TaskStatus> tasks = taskStatusRepository.findAllById(List.of(taskId1, taskId2));
-            assertThat(tasks.size()).isEqualTo(2);
-            assertThat(tasks.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+            List.of(taskId1, taskId2).forEach(taskId -> {
+                final Optional<TaskStatus> taskStatus = taskStatusService.getById(taskId);
+                assertThat(taskStatus.isPresent()).isTrue();
+                assertThat(taskStatus.get().getStatus().equals(COMPLETED.name())).isTrue();
+            });
         });
     }
 
@@ -187,9 +191,11 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
         });
 
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            final List<TaskStatus> tasks = taskStatusRepository.findAllById(List.of(taskId1, taskId2));
-            assertThat(tasks.size()).isEqualTo(2);
-            assertThat(tasks.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+            List.of(taskId1, taskId2).forEach(taskId -> {
+                final Optional<TaskStatus> taskStatus = taskStatusService.getById(taskId);
+                assertThat(taskStatus.isPresent()).isTrue();
+                assertThat(taskStatus.get().getStatus().equals(COMPLETED.name())).isTrue();
+            });
         });
 
     }
@@ -222,9 +228,9 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
         });
 
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
-            final Optional<TaskStatus> taskById = taskStatusRepository.findById(taskId);
-            assertThat(taskById.isEmpty()).isFalse();
-            assertThat(taskById.stream().allMatch(t -> COMPLETED.name().equals(t.getStatus()))).isTrue();
+            final Optional<TaskStatus> taskStatus = taskStatusService.getById(taskId);
+            assertThat(taskStatus.isPresent()).isTrue();
+            assertThat(taskStatus.get().getStatus().equals(COMPLETED.name())).isTrue();
         });
 
     }

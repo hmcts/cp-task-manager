@@ -7,7 +7,7 @@ import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.INPROGRESS;
 import static uk.gov.hmcts.cp.taskmanager.integration.PostgresIntegrationTestBase.ID_KEY;
 
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatusService;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatusService;
 import uk.gov.hmcts.cp.taskmanager.service.task.ExecutableTask;
 import uk.gov.hmcts.cp.taskmanager.service.task.Task;
 

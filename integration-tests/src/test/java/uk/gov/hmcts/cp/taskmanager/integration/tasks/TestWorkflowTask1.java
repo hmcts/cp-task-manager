@@ -8,8 +8,8 @@ import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.INPROGRESS;
 import static uk.gov.hmcts.cp.taskmanager.integration.PostgresIntegrationTestBase.ID_KEY;
 
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatus;
-import uk.gov.hmcts.cp.taskmanager.integration.persistence.TaskStatusService;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatus;
+import uk.gov.hmcts.cp.taskmanager.integration.service.TaskStatusService;
 import uk.gov.hmcts.cp.taskmanager.service.task.ExecutableTask;
 import uk.gov.hmcts.cp.taskmanager.service.task.Task;
 
@@ -41,7 +41,7 @@ public class TestWorkflowTask1 implements ExecutableTask {
         logger.info("TestWorkflowTask1 executing for job: {}", jobData);
 
         final UUID id = jobData.containsKey(ID_KEY) ? fromString(jobData.getString(ID_KEY)) : randomUUID();
-        taskStatusService.insertTaskStatus(new TaskStatus(id, jobData, INPROGRESS.name(), now()));
+        taskStatusService.saveStatus(new TaskStatus(id, jobData, INPROGRESS.name(), now()));
 
         return executionInfo().from(executionInfo)
                 .withAssignedTaskName("TEST_WORKFLOW_TASK_2")
