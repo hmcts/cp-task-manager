@@ -1,5 +1,6 @@
 package uk.gov.hmcts.cp.taskmanager.domain.executor;
 
+import uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus;
 import uk.gov.hmcts.cp.taskmanager.service.task.TaskRegistry;
 import uk.gov.hmcts.cp.taskmanager.service.task.ExecutableTask;
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
@@ -206,7 +207,22 @@ public class TaskExecutor implements Runnable{
      * @param executionInfo the execution information, must not be null
      */
     private void executeTask(final ExecutableTask task, final ExecutionInfo executionInfo) {
-        final ExecutionInfo executionResponse = task.execute(executionInfo);
+        ExecutionInfo executionResponse;
+        try{
+            executionResponse = task.execute(executionInfo);
+        } catch (Exception e) {
+            logger.error("Error executing the task: {}; error message: {}; setting task executionStatus to INPROGRESS", job.getAssignedTaskName(), e.getMessage());
+            // When a task is created, its executionStatus is set to STARTED.
+            // If an unhandled exception occurs, the task may continue executing in a loop and never transition to a COMPLETED state.
+            // To prevent this behavior, the client application must handle all unexpected errors.
+            // A generic catch-all block should be implemented to capture any unhandled exceptions and update the executionStatus to INPROGRESS,
+            // allowing the task to exit the loop and complete gracefully.
+            executionResponse = ExecutionInfo.executionInfo()
+                                 .from(executionInfo)
+                                 .withExecutionStatus(ExecutionStatus.INPROGRESS)
+                                 .withShouldRetry(nonNull(job.getRetryAttemptsRemaining()) && job.getRetryAttemptsRemaining() > 0)
+                                 .build();
+        }
 
         if (executionResponse.getExecutionStatus().equals(INPROGRESS)) {
             if (canRetry(task, executionResponse)) {
@@ -221,7 +237,7 @@ public class TaskExecutor implements Runnable{
                     //no retry attempts set
                     //when task is chained from another task; ensure task executed at least once
                     //when same task that was executed; ensure task no more executed
-                    retryAttemptsRemaining = !executionResponse.getAssignedTaskName().equals(job.getAssignedTaskName()) && isNull(retryAttemptsRemaining)
+                    retryAttemptsRemaining = !executionResponse.getAssignedTaskName().equals(job.getAssignedTaskName())
                             ? Integer.valueOf(1)
                             : Integer.valueOf(0);
                 }

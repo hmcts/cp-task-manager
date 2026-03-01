@@ -259,7 +259,6 @@ class TaskExecutorTest {
     @Test
     void testRunWithExceptionOnRelease() {
         when(taskRegistry.getTask("TEST_TASK")).thenReturn(Optional.of(executableTask));
-        when(executableTask.execute(any(ExecutionInfo.class))).thenThrow(new RuntimeException("Task execution failed"));
         doThrow(new RuntimeException("Release failed")).when(jobService).releaseJob(any(UUID.class));
 
         // Should not throw exception, should handle gracefully

@@ -13,6 +13,7 @@ public abstract class PostgresIntegrationTestBase {
 
     public static final String ID_KEY = "id";
     public static final String ATTEMPTS_KEY = "no_of_attempts";
+    public static final String ERROR_KEY = "error";
 
     @Container
     static PostgreSQLContainer<?> postgres =
