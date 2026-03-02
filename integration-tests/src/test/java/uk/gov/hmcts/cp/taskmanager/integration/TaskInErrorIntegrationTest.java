@@ -62,7 +62,6 @@ public class TaskInErrorIntegrationTest extends PostgresIntegrationTestBase {
                 createObjectBuilder()
                         .add("test", "data")
                         .add(ID_KEY, taskId.toString())
-                        .add(ERROR_KEY, "error")
                         .build(),
                 "TEST_ERROR_TASK",
                 now().minusSeconds(1),
@@ -95,7 +94,6 @@ public class TaskInErrorIntegrationTest extends PostgresIntegrationTestBase {
                 createObjectBuilder()
                         .add("test", "data")
                         .add(ID_KEY, taskId.toString())
-                        .add(ERROR_KEY, "error")
                         .build(),
                 "TEST_ERROR_RETRY_TASK",
                 now().minusSeconds(1),

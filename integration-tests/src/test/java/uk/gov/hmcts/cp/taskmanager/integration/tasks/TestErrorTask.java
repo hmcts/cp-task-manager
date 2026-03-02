@@ -2,9 +2,6 @@ package uk.gov.hmcts.cp.taskmanager.integration.tasks;
 
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
-import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo.executionInfo;
-import static uk.gov.hmcts.cp.taskmanager.domain.ExecutionStatus.COMPLETED;
-import static uk.gov.hmcts.cp.taskmanager.integration.PostgresIntegrationTestBase.ERROR_KEY;
 import static uk.gov.hmcts.cp.taskmanager.integration.PostgresIntegrationTestBase.ID_KEY;
 
 import uk.gov.hmcts.cp.taskmanager.domain.ExecutionInfo;
@@ -36,19 +33,12 @@ public class TestErrorTask implements ExecutableTask {
     @Override
     public ExecutionInfo execute(ExecutionInfo executionInfo) {
         final JsonObject jobData = executionInfo.getJobData();
-
         logger.info("TestErrorTask executing for job: {}", jobData);
 
-        if (jobData.containsKey(ERROR_KEY)) {
-            final UUID id = jobData.containsKey(ID_KEY) ? fromString(jobData.getString(ID_KEY)) : randomUUID();
-            taskStatusService.recordRetryAttempt(id, jobData);
+        final UUID id = jobData.containsKey(ID_KEY) ? fromString(jobData.getString(ID_KEY)) : randomUUID();
+        taskStatusService.recordRetryAttempt(id, jobData);
 
-            throw new IllegalStateException("Task failed to complete due to unexpected errors!");
-        }
-
-        return executionInfo().from(executionInfo)
-                .withExecutionStatus(COMPLETED)
-                .build();
+        throw new IllegalStateException("Task failed to complete due to unexpected errors!");
     }
 }
 
