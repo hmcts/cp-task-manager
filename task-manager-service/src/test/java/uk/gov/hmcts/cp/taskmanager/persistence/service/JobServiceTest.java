@@ -3,6 +3,7 @@ package uk.gov.hmcts.cp.taskmanager.persistence.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -158,6 +159,26 @@ class JobServiceTest {
         jobService.updateNextTaskRetryDetails(testJobId, startTime, retryAttempts);
 
         verify(jobsRepository).updateNextTaskRetryDetails(startTime, retryAttempts, testJobId);
+    }
+
+    @Test
+    void testGetJobByIdDetails() {
+        when(jobsRepository.findByJobId(testJobId)).thenReturn(Optional.of(testJob));
+
+        final Optional<Job> actualJobOpt = jobService.getJobById(testJobId);
+
+        assertEquals(testJob, actualJobOpt.get());
+        verify(jobsRepository).findByJobId(testJobId);
+    }
+
+    @Test
+    void testGetJobByIdDetailsWhenNoJobFound() {
+        when(jobsRepository.findByJobId(testJobId)).thenReturn(Optional.empty());
+
+        final Optional<Job> actualJobOpt = jobService.getJobById(testJobId);
+
+        assertTrue(actualJobOpt.isEmpty());
+        verify(jobsRepository).findByJobId(testJobId);
     }
 }
 

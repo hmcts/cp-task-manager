@@ -1,5 +1,6 @@
 package uk.gov.hmcts.cp.taskmanager.persistence.service;
 
+import static java.lang.String.format;
 import static java.util.Objects.nonNull;
 
 import uk.gov.hmcts.cp.taskmanager.domain.converter.JsonObjectConverter;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -206,6 +208,16 @@ public class JobService {
      */
     public void updateNextTaskRetryDetails(final UUID jobId, final ZonedDateTime startTime, final Integer retryAttemptsRemaining) {
         jobsRepository.updateNextTaskRetryDetails(startTime, retryAttemptsRemaining, jobId);
+    }
+
+    /**
+     * Finds a job by its unique identifier.
+     *
+     * @param jobId the unique job identifier
+     * @return an Optional containing the job if found, empty otherwise
+     */
+    public Optional<Job> getJobById(final UUID jobId) {
+        return jobsRepository.findByJobId(jobId);
     }
 }
 

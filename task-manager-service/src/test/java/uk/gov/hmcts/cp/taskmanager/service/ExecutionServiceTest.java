@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.ZonedDateTime;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -57,13 +58,14 @@ class ExecutionServiceTest {
         int retryAttempts = 3;
         when(taskRegistry.findRetryAttemptsRemainingFor("TEST_TASK")).thenReturn(retryAttempts);
 
-        executionService.executeWith(testExecutionInfo);
+        final UUID jobId = executionService.executeWith(testExecutionInfo);
 
-        ArgumentCaptor<Job> jobCaptor = ArgumentCaptor.forClass(Job.class);
+        final ArgumentCaptor<Job> jobCaptor = ArgumentCaptor.forClass(Job.class);
         verify(jobService).insertJob(jobCaptor.capture());
 
-        Job capturedJob = jobCaptor.getValue();
+        final Job capturedJob = jobCaptor.getValue();
         assertNotNull(capturedJob.getJobId());
+        assertEquals(jobId, capturedJob.getJobId());
         assertEquals(testJobData, capturedJob.getJobData());
         assertEquals("TEST_TASK", capturedJob.getAssignedTaskName());
         assertEquals(testExecutionInfo.getAssignedTaskStartTime(), capturedJob.getAssignedTaskStartTime());
