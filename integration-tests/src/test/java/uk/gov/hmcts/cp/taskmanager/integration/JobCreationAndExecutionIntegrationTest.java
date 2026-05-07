@@ -155,7 +155,7 @@ class JobCreationAndExecutionIntegrationTest extends PostgresIntegrationTestBase
         });
 
         assertTaskExecutedOnlyOnceWhenNoRetries(taskId);
-        Thread.sleep(3500);
+        Thread.sleep(5000);
         assertTaskExecutedOnlyOnceWhenNoRetries(taskId);
     }
 

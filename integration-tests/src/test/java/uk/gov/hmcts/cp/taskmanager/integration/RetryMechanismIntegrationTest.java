@@ -152,7 +152,7 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
         assertThat(jobsRepository.assignJobsToWorkerBatch(randomUUID(), now(), now(), 10)).isEmpty();
 
         assertTaskExecutedAsPerTheConfigRetryAttempts(taskId);
-        Thread.sleep(4000);
+        Thread.sleep(5000);
         assertTaskExecutedAsPerTheConfigRetryAttempts(taskId);
     }
 
