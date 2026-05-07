@@ -60,8 +60,7 @@ public class JobController {
                 "ONE_OFF_TASK_WITH_RETRY",
                 now(),
                 ExecutionStatus.STARTED,
-                false,1
-        );
+                false, 1, 3);
         
         executionService.executeWith(oneOffExecutionInfo);
         return ResponseEntity.ok().build();

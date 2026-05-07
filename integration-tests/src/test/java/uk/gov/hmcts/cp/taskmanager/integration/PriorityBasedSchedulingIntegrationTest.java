@@ -69,7 +69,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
                 createObjectBuilder()
                         .add("test", "data")
                         .add(ID_KEY, taskId1.toString())
-                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 5
+                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 5, null
         ));
 
         // Create job with priority 1 (highest)
@@ -78,7 +78,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
                 createObjectBuilder()
                         .add("test", "data")
                         .add(ID_KEY, taskId2.toString())
-                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 1
+                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 1, null
         ));
 
         // Create job with priority 10 (lowest)
@@ -87,7 +87,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
                 createObjectBuilder()
                         .add("test", "data")
                         .add(ID_KEY, taskId3.toString())
-                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 10
+                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 10, null
         ));
 
         // When - Query unassigned jobs
@@ -126,7 +126,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
                 createObjectBuilder()
                         .add("test", "data")
                         .add(ID_KEY, taskId1.toString())
-                        .build(), "TEST_COMPLETED_TASK", earlierTime, ExecutionStatus.STARTED, false, 5
+                        .build(), "TEST_COMPLETED_TASK", earlierTime, ExecutionStatus.STARTED, false, 5, null
         ));
 
         // Create job with later start time
@@ -135,7 +135,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
                 createObjectBuilder()
                         .add("test", "data")
                         .add(ID_KEY, taskId2.toString())
-                        .build(), "TEST_COMPLETED_TASK", laterTime, ExecutionStatus.STARTED, false, 5
+                        .build(), "TEST_COMPLETED_TASK", laterTime, ExecutionStatus.STARTED, false, 5, null
         ));
 
         // When - Query unassigned jobs
@@ -170,7 +170,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
                 createObjectBuilder()
                         .add("test", "data")
                         .add(ID_KEY, taskId1.toString())
-                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 10
+                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 10, null
         ));
 
         // Create high priority job second
@@ -179,7 +179,7 @@ class PriorityBasedSchedulingIntegrationTest extends PostgresIntegrationTestBase
                 createObjectBuilder()
                         .add("test", "data")
                         .add(ID_KEY, taskId2.toString())
-                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 1
+                        .build(), "TEST_COMPLETED_TASK", startTime, ExecutionStatus.STARTED, false, 1, null
         ));
 
         // When - Wait for execution

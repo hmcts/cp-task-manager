@@ -80,6 +80,11 @@ public class ExecutionInfo {
     private final Integer priority;
 
     /**
+     * The retryAttemptsRemaining of the job.
+     */
+    private final Integer retryAttemptsRemaining;
+
+    /**
      * Constructs a new ExecutionInfo with the specified parameters.
      * 
      * @param jobData the job data as JSON, may be null
@@ -91,7 +96,7 @@ public class ExecutionInfo {
                          final String assignedTaskName,
                          final ZonedDateTime assignedTaskStartTime,
                          final ExecutionStatus executionStatus) {
-        this(jobData, assignedTaskName, assignedTaskStartTime, executionStatus, false, null);
+        this(jobData, assignedTaskName, assignedTaskStartTime, executionStatus, false, null, null);
     }
 
     /**
@@ -108,7 +113,7 @@ public class ExecutionInfo {
                          final ZonedDateTime assignedTaskStartTime,
                          final ExecutionStatus executionStatus,
                          boolean shouldRetry) {
-        this(jobData, assignedTaskName, assignedTaskStartTime, executionStatus, shouldRetry, null);
+        this(jobData, assignedTaskName, assignedTaskStartTime, executionStatus, shouldRetry, null, null);
     }
 
     /**
@@ -126,13 +131,16 @@ public class ExecutionInfo {
                          final ZonedDateTime assignedTaskStartTime,
                          final ExecutionStatus executionStatus,
                          boolean shouldRetry,
-                         Integer priority) {
+                         Integer priority,
+                         Integer retryAttemptsRemaining
+    ) {
         this.jobData = jobData;
         this.assignedTaskName = assignedTaskName;
         this.assignedTaskStartTime = assignedTaskStartTime;
         this.executionStatus = executionStatus;
         this.shouldRetry = shouldRetry;
         this.priority = priority;
+        this.retryAttemptsRemaining = retryAttemptsRemaining;
     }
 
     public String getAssignedTaskName() {
@@ -168,6 +176,10 @@ public class ExecutionInfo {
         return priority;
     }
 
+    public Integer getRetryAttemptsRemaining() {
+        return retryAttemptsRemaining;
+    }
+
     /**
      * Builder class for constructing ExecutionInfo instances using a fluent API.
      * 
@@ -193,6 +205,7 @@ public class ExecutionInfo {
         private ExecutionStatus executionStatus;
         private boolean shouldRetry;
         private Integer priority;
+        private Integer retryAttemptsRemaining;
 
         /**
          * Private constructor to prevent direct instantiation.
@@ -214,6 +227,7 @@ public class ExecutionInfo {
             this.executionStatus = executionInfo.executionStatus;
             this.shouldRetry = executionInfo.shouldRetry;
             this.priority = executionInfo.priority;
+            this.retryAttemptsRemaining = executionInfo.retryAttemptsRemaining;
             return this;
         }
 
@@ -234,7 +248,7 @@ public class ExecutionInfo {
                 throw new RuntimeException("retry exhaust task details (jobData, assignedTaskName, assignedTaskStartTime) must not be null when shouldRetry is true");
             }
 
-            return new ExecutionInfo(jobData, assignedTaskName, assignedTaskStartTime, executionStatus, shouldRetry, priority);
+            return new ExecutionInfo(jobData, assignedTaskName, assignedTaskStartTime, executionStatus, shouldRetry, priority, retryAttemptsRemaining);
         }
 
         public Builder withJobData(final JsonObject jobData) {
@@ -267,6 +281,11 @@ public class ExecutionInfo {
             return this;
         }
 
+        public Builder withRetryAttemptsRemaining(final Integer retryAttemptsRemaining) {
+            this.retryAttemptsRemaining = retryAttemptsRemaining;
+            return this;
+        }
+
         /**
          * Initializes the builder with values from a Job entity.
          * 
@@ -288,6 +307,7 @@ public class ExecutionInfo {
             this.assignedTaskName = job.getAssignedTaskName();
             this.assignedTaskStartTime = job.getAssignedTaskStartTime();
             this.priority = job.getPriority();
+            this.retryAttemptsRemaining = job.getRetryAttemptsRemaining();
             return this;
         }
     }

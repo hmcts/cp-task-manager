@@ -48,7 +48,8 @@ class ExecutionServiceTest {
                 ZonedDateTime.now(),
                 ExecutionStatus.STARTED,
                 false,
-                5
+                5,
+                3
         );
     }
 
@@ -112,7 +113,8 @@ class ExecutionServiceTest {
                 ZonedDateTime.now(),
                 ExecutionStatus.STARTED,
                 false,
-                1  // Highest priority
+                1,  // Highest priority
+                2
         );
         when(taskRegistry.findRetryAttemptsRemainingFor("HIGH_PRIORITY_TASK")).thenReturn(5);
 
@@ -133,7 +135,8 @@ class ExecutionServiceTest {
                 ZonedDateTime.now(),
                 ExecutionStatus.STARTED,
                 false,
-                10  // Lowest priority
+                10,  // Lowest priority
+                3
         );
         when(taskRegistry.findRetryAttemptsRemainingFor("LOW_PRIORITY_TASK")).thenReturn(1);
 
@@ -154,6 +157,7 @@ class ExecutionServiceTest {
                 ZonedDateTime.now(),
                 ExecutionStatus.STARTED,
                 true,  // shouldRetry
+                3,
                 3
         );
         when(taskRegistry.findRetryAttemptsRemainingFor("RETRY_TASK")).thenReturn(3);
