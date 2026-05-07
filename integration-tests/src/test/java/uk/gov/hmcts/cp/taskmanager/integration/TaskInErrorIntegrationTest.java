@@ -71,7 +71,7 @@ public class TaskInErrorIntegrationTest extends PostgresIntegrationTestBase {
         executionService.executeWith(executionInfo);
 
         assertTaskExecutedOnlyOnce(taskId, 1);
-        Thread.sleep(4000);
+        Thread.sleep(5000);
         assertTaskExecutedOnlyOnce(taskId, 1);
 
         // When - Wait for first execution
@@ -103,7 +103,7 @@ public class TaskInErrorIntegrationTest extends PostgresIntegrationTestBase {
         executionService.executeWith(executionInfo);
 
         assertTaskExecutedOnlyOnce(taskId, 3);
-        Thread.sleep(4000);
+        Thread.sleep(5000);
         assertTaskExecutedOnlyOnce(taskId, 3);
 
         // When - Wait for first execution
