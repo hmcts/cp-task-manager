@@ -16,7 +16,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.ZonedDateTime;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -49,7 +48,8 @@ class ExecutionServiceTest {
                 ZonedDateTime.now(),
                 ExecutionStatus.STARTED,
                 false,
-                5
+                5,
+                3
         );
     }
 
@@ -58,14 +58,13 @@ class ExecutionServiceTest {
         int retryAttempts = 3;
         when(taskRegistry.findRetryAttemptsRemainingFor("TEST_TASK")).thenReturn(retryAttempts);
 
-        final UUID jobId = executionService.executeWith(testExecutionInfo);
+        executionService.executeWith(testExecutionInfo);
 
-        final ArgumentCaptor<Job> jobCaptor = ArgumentCaptor.forClass(Job.class);
+        ArgumentCaptor<Job> jobCaptor = ArgumentCaptor.forClass(Job.class);
         verify(jobService).insertJob(jobCaptor.capture());
 
-        final Job capturedJob = jobCaptor.getValue();
+        Job capturedJob = jobCaptor.getValue();
         assertNotNull(capturedJob.getJobId());
-        assertEquals(jobId, capturedJob.getJobId());
         assertEquals(testJobData, capturedJob.getJobData());
         assertEquals("TEST_TASK", capturedJob.getAssignedTaskName());
         assertEquals(testExecutionInfo.getAssignedTaskStartTime(), capturedJob.getAssignedTaskStartTime());
@@ -114,7 +113,8 @@ class ExecutionServiceTest {
                 ZonedDateTime.now(),
                 ExecutionStatus.STARTED,
                 false,
-                1  // Highest priority
+                1,  // Highest priority
+                2
         );
         when(taskRegistry.findRetryAttemptsRemainingFor("HIGH_PRIORITY_TASK")).thenReturn(5);
 
@@ -135,7 +135,8 @@ class ExecutionServiceTest {
                 ZonedDateTime.now(),
                 ExecutionStatus.STARTED,
                 false,
-                10  // Lowest priority
+                10,  // Lowest priority
+                3
         );
         when(taskRegistry.findRetryAttemptsRemainingFor("LOW_PRIORITY_TASK")).thenReturn(1);
 
@@ -156,6 +157,7 @@ class ExecutionServiceTest {
                 ZonedDateTime.now(),
                 ExecutionStatus.STARTED,
                 true,  // shouldRetry
+                3,
                 3
         );
         when(taskRegistry.findRetryAttemptsRemainingFor("RETRY_TASK")).thenReturn(3);

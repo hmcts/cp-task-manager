@@ -71,16 +71,14 @@ public class ExecutionService {
      *
      * @param executionInfo the execution information containing task details, data,
      *                      start time, and optional priority
-     * @return unique job ID
      */
-    public UUID executeWith(final ExecutionInfo executionInfo) {
+    public void executeWith(final ExecutionInfo executionInfo) {
         final Integer retryAttemptsRemaining = taskRegistry.findRetryAttemptsRemainingFor(executionInfo.getAssignedTaskName());
         final UUID jobId = randomUUID();
         final Integer priority = executionInfo.getPriority() != null ? executionInfo.getPriority() : 10;
         final Job job = new Job(jobId, executionInfo.getJobData(),
                 executionInfo.getAssignedTaskName(), executionInfo.getAssignedTaskStartTime(), null, null, retryAttemptsRemaining, priority);
         jobService.insertJob(job);
-        return jobId;
     }
 }
 

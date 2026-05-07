@@ -40,7 +40,7 @@ public class TestRetryTask implements ExecutableTask {
 
         JsonObject jobData = executionInfo.getJobData();
 
-        logger.info("TestRetryTask executing for job: {}", jobData);
+        logger.info("TestRetryTask executing for job: {} and retryAttemptsRemaining: {}", jobData, executionInfo.getRetryAttemptsRemaining());
 
         final UUID id = jobData.containsKey(ID_KEY) ? fromString(jobData.getString(ID_KEY)) : randomUUID();
         taskStatusService.recordRetryAttempt(id, jobData);

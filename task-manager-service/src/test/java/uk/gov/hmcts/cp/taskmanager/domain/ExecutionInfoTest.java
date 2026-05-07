@@ -61,8 +61,9 @@ class ExecutionInfoTest {
         ExecutionStatus status = ExecutionStatus.COMPLETED;
         boolean shouldRetry = false;
         Integer priority = 5;
+        Integer retryAttemptsRemaining = 3;
 
-        ExecutionInfo info = new ExecutionInfo(jobData, assignedTaskName, startTime, status, shouldRetry, priority);
+        ExecutionInfo info = new ExecutionInfo(jobData, assignedTaskName, startTime, status, shouldRetry, priority, retryAttemptsRemaining);
 
         assertEquals(jobData, info.getJobData());
         assertEquals(assignedTaskName, info.getAssignedTaskName());
@@ -70,6 +71,7 @@ class ExecutionInfoTest {
         assertEquals(status, info.getExecutionStatus());
         assertFalse(info.isShouldRetry());
         assertEquals(priority, info.getPriority());
+        assertEquals(retryAttemptsRemaining, info.getRetryAttemptsRemaining());
     }
 
     @Test
@@ -108,7 +110,7 @@ class ExecutionInfoTest {
     void testBuilderFromExecutionInfo() {
         JsonObject jobData = createTestJsonObject();
         ExecutionInfo original = new ExecutionInfo(jobData, "ORIGINAL_TASK", 
-                ZonedDateTime.now(), ExecutionStatus.STARTED, true, 2);
+                ZonedDateTime.now(), ExecutionStatus.STARTED, true, 2, 1);
 
         ExecutionInfo copy = ExecutionInfo.executionInfo()
                 .from(original)
@@ -121,6 +123,7 @@ class ExecutionInfoTest {
         assertEquals(ExecutionStatus.STARTED, copy.getExecutionStatus());
         assertTrue(copy.isShouldRetry());
         assertEquals(2, copy.getPriority());
+        assertEquals(1, copy.getRetryAttemptsRemaining());
     }
 
     @Test

@@ -107,6 +107,7 @@ class RetryMechanismIntegrationTest extends PostgresIntegrationTestBase {
 
         // When - Wait for first execution
         await().atMost(java.time.Duration.ofSeconds(5)).untilAsserted(() -> {
+
             List<Job> jobs = jobsRepository.findAll();
             if (!jobs.isEmpty()) {
                 Job job = jobs.get(0);
