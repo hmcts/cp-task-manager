@@ -1,8 +1,13 @@
 package uk.gov.hmcts.cp.taskmanager.domain.executor;
 
-import uk.gov.hmcts.cp.taskmanager.service.task.TaskRegistry;
 import uk.gov.hmcts.cp.taskmanager.persistence.entity.Job;
 import uk.gov.hmcts.cp.taskmanager.persistence.service.JobService;
+import uk.gov.hmcts.cp.taskmanager.service.task.TaskRegistry;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ThreadPoolExecutor;
+
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
@@ -11,10 +16,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
-
-import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * Main scheduler component that polls for unassigned jobs and assigns them to worker threads.
@@ -154,9 +155,15 @@ public class JobExecutor {
     @Scheduled(fixedDelayString = "${job.executor.poll-interval:5000}")
     public void checkAndAssignJobs() {
         try {
-            logger.debug("Checking for unassigned jobs (batch size: {})...", batchSize);
+            final int availableJobCapacity = getAvailableJobCapacity();
+            if (availableJobCapacity == 0) {
+                logger.info("No executor capacity available");
+                return;
+            }
+
+            logger.debug("Checking for unassigned jobs (availableJobCapacity size: {})...", availableJobCapacity);
             final UUID workerId = UUID.randomUUID();
-            final List<Job> assignedJobs = jobService.assignJobsToWorkerBatch(workerId, batchSize);
+            final List<Job> assignedJobs = jobService.assignJobsToWorkerBatch(workerId, availableJobCapacity);
 
             if (assignedJobs.isEmpty()) {
                 logger.debug("No unassigned jobs found");
@@ -173,6 +180,7 @@ public class JobExecutor {
                     logger.error("Error assigning job {}: {}", job.getJobId(), e.getMessage(), e);
                     // Decrement retry attempts on failure
                     try {
+                        jobService.releaseJob(job.getJobId());
                         jobService.decrementRetryAttempts(job.getJobId());
                     } catch (Exception ex) {
                         logger.error("Error decrementing retry attempts for job {}: {}", job.getJobId(), ex.getMessage());
@@ -182,6 +190,13 @@ public class JobExecutor {
         } catch (Exception e) {
             logger.error("Error in job executor: {}", e.getMessage(), e);
         }
+    }
+
+    private int getAvailableJobCapacity() {
+        final ThreadPoolExecutor threadPool = executor.getThreadPoolExecutor();
+        final int availableCapacity = threadPool.getQueue().remainingCapacity()
+                + (threadPool.getMaximumPoolSize() - threadPool.getActiveCount());
+        return Math.max(0, Math.min(batchSize, availableCapacity));
     }
 
     /**
@@ -197,10 +212,7 @@ public class JobExecutor {
         UUID workerId = job.getWorkerId();
         logger.info("Worker {} starting execution of job {} (task: {})", workerId, job.getJobId(), job.getAssignedTaskName());
 
-        executor.execute(new TaskExecutor(
-                job,
-                taskRegistry,
-                jobService,
-                transactionManager));
+        new TaskExecutor(job, taskRegistry, jobService, transactionManager)
+                .run();
     }
 }
