@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '4.0.0' apply false
+    id 'org.springframework.boot' version '4.1.0' apply false
     id 'io.spring.dependency-management' version '1.1.7'
     id 'maven-publish'
 }
@@ -53,10 +53,10 @@ subprojects {
 
     dependencies {
         // Lombok - using latest version for Java compatibility
-        compileOnly 'org.projectlombok:lombok:1.18.42'
-        annotationProcessor 'org.projectlombok:lombok:1.18.42'
-        testCompileOnly "org.projectlombok:lombok:1.18.42"
-        testAnnotationProcessor "org.projectlombok:lombok:1.18.42"
+        compileOnly 'org.projectlombok:lombok:1.18.46'
+        annotationProcessor 'org.projectlombok:lombok:1.18.46'
+        testCompileOnly "org.projectlombok:lombok:1.18.46"
+        testAnnotationProcessor "org.projectlombok:lombok:1.18.46"
         
         // Test
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
